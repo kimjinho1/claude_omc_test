@@ -56,7 +56,7 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ price: 88000, volume: 1000000 });
+      krAdapter.getQuote.mockResolvedValue({ symbol: '005930', price: '88000', change: '0', changePercent: '0', volume: 1000000, timestamp: new Date() });
 
       await service.updateAnalytics('KR');
 
@@ -87,7 +87,7 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      usAdapter.getQuote.mockResolvedValue({ price: 195, volume: 50000000 });
+      usAdapter.getQuote.mockResolvedValue({ symbol: 'AAPL', price: '195', change: '0', changePercent: '0', volume: 50000000, timestamp: new Date() });
 
       await service.updateAnalytics('US');
 
@@ -103,7 +103,7 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocks)
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ price: 50000, volume: null });
+      krAdapter.getQuote.mockResolvedValue({ symbol: 'EMPTY', price: '50000', change: '0', changePercent: '0', timestamp: new Date() });
 
       await service.updateAnalytics('KR');
 
@@ -123,7 +123,7 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ price: 110, volume: 500 });
+      krAdapter.getQuote.mockResolvedValue({ symbol: 'TEST', price: '110', change: '0', changePercent: '0', volume: 500, timestamp: new Date() });
 
       await service.updateAnalytics('KR');
 
@@ -143,7 +143,7 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ price: 200, volume: 0 });
+      krAdapter.getQuote.mockResolvedValue({ symbol: 'FLAT', price: '200', change: '0', changePercent: '0', volume: 0, timestamp: new Date() });
 
       await service.updateAnalytics('KR');
 
@@ -183,7 +183,7 @@ describe('AnalyticsService', () => {
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
       krAdapter.getQuote
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({ price: 100, volume: 1000 });
+        .mockResolvedValueOnce({ symbol: 'OK', price: '100', change: '0', changePercent: '0', volume: 1000, timestamp: new Date() });
 
       await expect(service.updateAnalytics('KR')).resolves.not.toThrow();
     });
