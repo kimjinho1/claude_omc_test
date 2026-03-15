@@ -25,7 +25,7 @@ export class StocksController {
   @Get(':symbol/chart')
   getChart(
     @Param('symbol') symbol: string,
-    @Query('period') period: '1d' | '1w' | '1m' = '1d',
+    @Query('period') period: '1d' | '1w' | '1m' | '3m' | '1y' = '1m',
   ) {
     return this.stocksService.getChart(symbol, period);
   }

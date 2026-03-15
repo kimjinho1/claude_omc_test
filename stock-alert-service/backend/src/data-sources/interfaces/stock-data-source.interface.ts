@@ -26,6 +26,6 @@ export interface OHLCVBar {
 
 export interface IStockDataSource {
   getQuote(symbol: string): Promise<StockQuote>;
-  getHistory(symbol: string, period: '1d' | '1w' | '1m'): Promise<OHLCVBar[]>;
+  getHistory(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y'): Promise<OHLCVBar[]>;
   getFundamentals(symbol: string): Promise<StockFundamentals>;
 }

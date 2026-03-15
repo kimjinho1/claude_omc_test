@@ -49,6 +49,12 @@
       "type": "directory"
     },
     {
+      "path": "stock-alert-service/backend/src/stocks/stocks.service.ts",
+      "accessCount": 2,
+      "lastAccessed": 1773613723561,
+      "type": "file"
+    },
+    {
       "path": ".claude/settings.local.json",
       "accessCount": 1,
       "lastAccessed": 1773594581616,
@@ -58,6 +64,12 @@
       "path": ".claude/settings.json",
       "accessCount": 1,
       "lastAccessed": 1773594664154,
+      "type": "file"
+    },
+    {
+      "path": "stock-alert-service/backend/src/stocks/__tests__/stocks.service.spec.ts",
+      "accessCount": 1,
+      "lastAccessed": 1773613680676,
       "type": "file"
     }
   ],

@@ -88,14 +88,22 @@ export class UsStockAdapter implements IStockDataSource {
 
   async getHistory(
     symbol: string,
-    period: '1d' | '1w' | '1m',
+    period: '1d' | '1w' | '1m' | '3m' | '1y',
   ): Promise<OHLCVBar[]> {
-    const multiplier = period === '1d' ? 1 : period === '1w' ? 7 : 30;
-    const timespan = period === '1d' ? 'day' : 'day';
-    const from = new Date(Date.now() - multiplier * 30 * 24 * 60 * 60 * 1000)
+    const now = Date.now();
+    const to = new Date(now).toISOString().slice(0, 10);
+    const daysBackMap: Record<string, number> = {
+      '1d': 2,
+      '1w': 7,
+      '1m': 30,
+      '3m': 90,
+      '1y': 365,
+    };
+    const from = new Date(now - daysBackMap[period] * 24 * 60 * 60 * 1000)
       .toISOString()
       .slice(0, 10);
-    const to = new Date().toISOString().slice(0, 10);
+    const timespan = period === '1d' ? 'hour' : 'day';
+
     try {
       const data = (await this.throttledFetch(
         `${this.baseUrl}/v2/aggs/ticker/${symbol}/range/1/${timespan}/${from}/${to}`,
@@ -110,7 +118,10 @@ export class UsStockAdapter implements IStockDataSource {
         }>;
       };
       return (data.results || []).map((bar) => ({
-        date: new Date(bar.t).toISOString().slice(0, 10),
+        date:
+          period === '1d'
+            ? new Date(bar.t).toISOString().slice(0, 16).replace('T', ' ')
+            : new Date(bar.t).toISOString().slice(0, 10),
         open: bar.o.toString(),
         high: bar.h.toString(),
         low: bar.l.toString(),
