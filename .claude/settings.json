@@ -1,0 +1,45 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); if [ \"$branch\" = \"main\" ] || [ \"$branch\" = \"master\" ]; then echo \"⚠️  [브랜치 경고] '$branch' 브랜치에서 직접 작업 중입니다. feature/ 또는 fix/ 브랜치를 사용하세요.\" >&2; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" 2>/dev/null | grep -iE '(password|secret|api[_-]?key|token|private[_-]?key)\\s*[:=]\\s*[\"'\\''`]?[A-Za-z0-9+/\\-_]{16,}' && echo '⚠️  [보안 경고] 민감한 정보가 감지됐습니다. 커밋 전 반드시 확인하세요.' >&2 || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"${CLAUDE_TOOL_INPUT:-}\" | grep -qE 'git commit'; then echo 'hook: post-commit — lint/format을 실행하세요. (예: npm run lint, ruff format 등)' >&2; fi; true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Claude 작업 완료\" >> ~/.claude/task-log.txt 2>/dev/null; true"
+          }
+        ]
+      }
+    ]
+  }
+}

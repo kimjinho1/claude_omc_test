@@ -55,3 +55,7 @@ venv/
 *.pfx
 secrets/
 credentials/
+
+# AI tool settings (local only)
+.claude/settings.local.json
+.omc/

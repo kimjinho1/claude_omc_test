@@ -4,7 +4,7 @@ https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications
 
 ## 목차
 
-1. [설치](#1-설치)
+1. [설치 및 팀 온보딩](#1-설치-및-팀-온보딩)
 2. [명령어 목록](#2-명령어-목록)
 3. [명령어 상세](#3-명령어-상세)
 4. [워크플로우 패턴](#4-워크플로우-패턴)
@@ -12,13 +12,42 @@ https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications
 
 ---
 
-## 1. 설치
+## 1. 설치 및 팀 온보딩
+
+이 레포는 `.claude/` 설정이 git으로 공유됩니다. 클론 후 아래 순서대로 진행하면 팀 규칙이 즉시 적용됩니다.
 
 ```bash
+git clone https://github.com/kimjinho1/claude_omc_test.git
+cd claude_omc_test
+
+# Claude Code 플러그인 설치 (최초 1회)
 /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
 /plugin install oh-my-claudecode
 /omc-setup    # OMC 환경 설정
 /omc-doctor   # 설치 완료 후 확인
+```
+
+> 이후 Claude Code를 열면 팀 규칙(브랜치 전략, 커밋 컨벤션 등)이 자동 적용됩니다.
+
+### 자동 적용 항목
+
+| 항목 | 내용 |
+|------|------|
+| **브랜치 경고** | `main`에서 작업 시 경고 메시지 출력 |
+| **보안 검사** | 파일에 API 키·토큰 패턴 감지 시 경고 |
+| **커밋 후 알림** | lint/format 실행 안내 |
+| **작업 완료 로그** | `~/.claude/task-log.txt`에 완료 이력 기록 |
+
+### 개인 설정 (git 미추적)
+
+개인 설정은 `.claude/settings.local.json`에 저장하세요. 이 파일은 `.gitignore`에 포함되어 팀과 공유되지 않습니다.
+
+```json
+{
+  "permissions": {
+    "allow": ["...개인 허용 명령어..."]
+  }
+}
 ```
 
 ---
