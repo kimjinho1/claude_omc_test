@@ -14,7 +14,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (account && profile) {
         // Sync user with backend on first login
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/sync`, {
+          // INTERNAL_API_URL is used for server-side calls (e.g. Docker: http://backend:3001)
+          // Falls back to NEXT_PUBLIC_API_URL for local dev
+          const backendUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
+          const res = await fetch(`${backendUrl}/users/sync`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
