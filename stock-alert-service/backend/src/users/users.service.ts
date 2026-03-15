@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string) {
@@ -19,6 +21,7 @@ export class UsersService {
     image?: string;
     provider: string;
   }) {
+    this.logger.debug(`upsert user: email=${dto.email}`);
     return this.prisma.user.upsert({
       where: { email: dto.email },
       update: { name: dto.name, image: dto.image },
@@ -32,10 +35,14 @@ export class UsersService {
   }
 
   async getAlertSettings(userId: string) {
+    this.logger.debug(`getAlertSettings: userId=${userId}`);
     return this.prisma.alertSetting.findUnique({ where: { userId } });
   }
 
   async upsertAlertSettings(userId: string, thresholds: number[]) {
+    this.logger.debug(
+      `upsertAlertSettings: userId=${userId} thresholds=${JSON.stringify(thresholds)}`,
+    );
     return this.prisma.alertSetting.upsert({
       where: { userId },
       update: { thresholds },

@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, LogLevel } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  const logLevels: LogLevel[] = ['log', 'warn', 'error'];
+  if (process.env.NODE_ENV === 'development') {
+    logLevels.push('debug');
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['log', 'warn', 'error', 'debug'],
+    logger: logLevels,
   });
 
   // HTTP request logging middleware

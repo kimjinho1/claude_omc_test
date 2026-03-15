@@ -39,6 +39,9 @@ export class DropDetectorService {
       if (high6m.isZero()) continue;
 
       const dropPct = high6m.minus(latest.price).div(high6m).times(100);
+      this.logger.debug(
+        `DEBUG evaluating ${stock.symbol}: currentPrice=${latest.price} high6m=${high6m} drop=${dropPct.toFixed(2)}%`,
+      );
 
       for (const user of users) {
         const isFavorite = user.favorites.some(
@@ -49,7 +52,15 @@ export class DropDetectorService {
           : (user.alertSettings[0]?.thresholds ?? []);
 
         const hitLevel = this.getHitLevel(dropPct, thresholds);
-        if (hitLevel === null) continue;
+        if (hitLevel === null) {
+          this.logger.debug(
+            `DEBUG ${stock.symbol} within threshold (drop=${dropPct.toFixed(2)}%)`,
+          );
+          continue;
+        }
+        this.logger.debug(
+          `DEBUG THRESHOLD BREACH ${stock.symbol}: drop=${dropPct.toFixed(2)}% >= threshold=${hitLevel}%`,
+        );
 
         const alreadySent = await this.checkDuplicate(
           user.id,
