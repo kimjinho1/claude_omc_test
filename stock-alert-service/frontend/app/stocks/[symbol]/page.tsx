@@ -1,7 +1,7 @@
 'use client';
 
-import { use } from 'react';
-import useSWR from 'swr';
+import { use, useState } from 'react';
+import useSWR, { mutate } from 'swr';
 import { useSession } from 'next-auth/react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
@@ -22,11 +22,13 @@ type StockDetail = {
 };
 
 type OHLCVBar = { date: string; close: string };
+type Favorite = { symbol: string };
 
 export default function StockDetailPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = use(params);
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? '';
+  const [toggling, setToggling] = useState(false);
 
   const { data: detail } = useSWR<StockDetail>(
     token ? `${API_URL}/stocks/${symbol}` : null,
@@ -38,6 +40,24 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
     token ? `${API_URL}/stocks/${symbol}/chart?period=1m` : null,
     (url: string) => fetcher(url, token),
   );
+
+  const favKey = token ? `${API_URL}/favorites` : null;
+  const { data: favorites = [] } = useSWR<Favorite[]>(favKey, (url: string) => fetcher(url, token));
+  const isFavorite = Array.isArray(favorites) && favorites.some((f) => f.symbol === symbol);
+
+  async function toggleFavorite() {
+    if (!token) return;
+    setToggling(true);
+    try {
+      await fetch(`${API_URL}/favorites/${symbol}`, {
+        method: isFavorite ? 'DELETE' : 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      mutate(favKey);
+    } finally {
+      setToggling(false);
+    }
+  }
 
   if (!detail) return <div className="p-8 text-gray-400">불러오는 중...</div>;
 
@@ -55,7 +75,20 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
           <h1 className="text-2xl font-bold">{detail.name}</h1>
           <p className="text-sm text-gray-400">{detail.symbol} · {detail.market}</p>
         </div>
-        {dropPct !== null && <DropBadge dropPercent={dropPct} />}
+        <div className="flex items-center gap-2">
+          {dropPct !== null && <DropBadge dropPercent={dropPct} />}
+          <button
+            onClick={toggleFavorite}
+            disabled={toggling}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+              isFavorite
+                ? 'bg-yellow-900 text-yellow-300 hover:bg-yellow-800'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {isFavorite ? '★ 즐겨찾기 해제' : '☆ 즐겨찾기'}
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 flex items-end gap-3">
