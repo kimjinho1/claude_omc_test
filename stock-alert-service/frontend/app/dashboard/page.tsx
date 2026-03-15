@@ -30,11 +30,12 @@ export default function DashboardPage() {
 }
 
 function StockList({ market, token, onMarketChange }: { market: 'KR' | 'US'; token: string; onMarketChange: (m: 'KR' | 'US') => void }) {
-  const { data: stocks = [], isLoading } = useSWR<Stock[]>(
+  const { data: rawStocks, isLoading } = useSWR<Stock[]>(
     token ? `${API_URL}/stocks?market=${market}` : null,
     (url: string) => fetcher(url, token),
     { refreshInterval: 30000 },
   );
+  const stocks = Array.isArray(rawStocks) ? rawStocks : [];
 
   return (
     <div className="mx-auto max-w-4xl p-6">
