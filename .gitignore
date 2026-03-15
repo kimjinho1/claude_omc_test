@@ -38,7 +38,11 @@ Thumbs.db
 
 # AI tool settings (local only)
 .claude/settings.local.json
-.omc/
+
+# OMC runtime state (ephemeral, not team-shared)
+.omc/state/
+.omc/logs/
+.omc/sessions/
 
 # Python
 __pycache__/
@@ -55,7 +59,3 @@ venv/
 *.pfx
 secrets/
 credentials/
-
-# AI tool settings (local only)
-.claude/settings.local.json
-.omc/
