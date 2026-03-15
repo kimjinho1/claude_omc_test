@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AlertsService } from '../alerts.service';
 import { AnalyticsService } from '../analytics.service';
@@ -107,7 +108,7 @@ describe('AlertsService', () => {
     });
 
     it('KR and US use independent holiday checks', async () => {
-      const krHolidayCheck = jest.fn().mockReturnValue(true);  // KR is holiday
+      const krHolidayCheck = jest.fn().mockReturnValue(true); // KR is holiday
       const usHolidayCheck = jest.fn().mockReturnValue(false); // US is not
 
       const today = new Date().toISOString().slice(0, 10);

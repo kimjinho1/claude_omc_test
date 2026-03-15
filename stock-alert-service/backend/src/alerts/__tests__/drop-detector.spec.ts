@@ -1,15 +1,16 @@
-import { DropDetectorService } from '../drop-detector.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
 describe('DropDetectorService', () => {
   // Access private method via casting
-  const svc = { getHitLevel: (dropPct: Decimal, thresholds: number[]) => {
-    const sorted = [...thresholds].sort((a, b) => b - a);
-    for (const level of sorted) {
-      if (dropPct.greaterThanOrEqualTo(level)) return level;
-    }
-    return null;
-  }};
+  const svc = {
+    getHitLevel: (dropPct: Decimal, thresholds: number[]) => {
+      const sorted = [...thresholds].sort((a, b) => b - a);
+      for (const level of sorted) {
+        if (dropPct.greaterThanOrEqualTo(level)) return level;
+      }
+      return null;
+    },
+  };
 
   describe('getHitLevel', () => {
     it('returns null when drop is below all thresholds', () => {
@@ -29,7 +30,9 @@ describe('DropDetectorService', () => {
     });
 
     it('returns 25 for 27.5% drop with all thresholds', () => {
-      expect(svc.getHitLevel(new Decimal('27.5'), [10, 15, 20, 25, 30])).toBe(25);
+      expect(svc.getHitLevel(new Decimal('27.5'), [10, 15, 20, 25, 30])).toBe(
+        25,
+      );
     });
 
     it('returns null for empty thresholds', () => {

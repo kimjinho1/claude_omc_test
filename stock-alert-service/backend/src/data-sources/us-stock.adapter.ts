@@ -9,7 +9,6 @@ import {
   StockQuote,
 } from './interfaces/stock-data-source.interface';
 
-const RATE_LIMIT_KEY = 'polygon:rate:tokens';
 const RATE_LIMIT_RPM = 5; // free tier: 5 req/min
 
 /**
@@ -53,11 +52,18 @@ export class UsStockAdapter implements IStockDataSource {
 
   async getQuote(symbol: string): Promise<StockQuote> {
     try {
-      const data = await this.throttledFetch(
+      const data = (await this.throttledFetch(
         `${this.baseUrl}/v2/aggs/ticker/${symbol}/prev`,
-      ) as { results?: Array<{ c: number; o: number; v: number; t: number }> };
+      )) as { results?: Array<{ c: number; o: number; v: number; t: number }> };
       const result = data.results?.[0];
-      if (!result) return { symbol, price: '0', change: '0', changePercent: '0', timestamp: new Date() };
+      if (!result)
+        return {
+          symbol,
+          price: '0',
+          change: '0',
+          changePercent: '0',
+          timestamp: new Date(),
+        };
       const change = result.c - result.o;
       const changePercent = ((change / result.o) * 100).toFixed(2);
       return {
@@ -70,11 +76,20 @@ export class UsStockAdapter implements IStockDataSource {
       };
     } catch (err) {
       this.logger.error(`Polygon getQuote failed for ${symbol}`, err);
-      return { symbol, price: '0', change: '0', changePercent: '0', timestamp: new Date() };
+      return {
+        symbol,
+        price: '0',
+        change: '0',
+        changePercent: '0',
+        timestamp: new Date(),
+      };
     }
   }
 
-  async getHistory(symbol: string, period: '1d' | '1w' | '1m'): Promise<OHLCVBar[]> {
+  async getHistory(
+    symbol: string,
+    period: '1d' | '1w' | '1m',
+  ): Promise<OHLCVBar[]> {
     const multiplier = period === '1d' ? 1 : period === '1w' ? 7 : 30;
     const timespan = period === '1d' ? 'day' : 'day';
     const from = new Date(Date.now() - multiplier * 30 * 24 * 60 * 60 * 1000)
@@ -82,9 +97,18 @@ export class UsStockAdapter implements IStockDataSource {
       .slice(0, 10);
     const to = new Date().toISOString().slice(0, 10);
     try {
-      const data = await this.throttledFetch(
+      const data = (await this.throttledFetch(
         `${this.baseUrl}/v2/aggs/ticker/${symbol}/range/1/${timespan}/${from}/${to}`,
-      ) as { results?: Array<{ t: number; o: number; h: number; l: number; c: number; v: number }> };
+      )) as {
+        results?: Array<{
+          t: number;
+          o: number;
+          h: number;
+          l: number;
+          c: number;
+          v: number;
+        }>;
+      };
       return (data.results || []).map((bar) => ({
         date: new Date(bar.t).toISOString().slice(0, 10),
         open: bar.o.toString(),
@@ -101,21 +125,30 @@ export class UsStockAdapter implements IStockDataSource {
 
   async getFundamentals(symbol: string): Promise<StockFundamentals> {
     try {
-      const data = await this.throttledFetch(
-        `${this.baseUrl}/vX/reference/financials?ticker=${symbol}&limit=1`,
-      ) as { results?: Array<{ financials?: { income_statement?: { basic_earnings_per_share?: { value: number } } } }> };
-      // Polygon.io free tier has limited fundamental data
+      // Polygon.io free tier has limited fundamental data — financials endpoint unused
       // week52 from aggs endpoint
-      const year = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const year = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
       const today = new Date().toISOString().slice(0, 10);
-      const aggData = await this.throttledFetch(
+      const aggData = (await this.throttledFetch(
         `${this.baseUrl}/v2/aggs/ticker/${symbol}/range/1/day/${year}/${today}?adjusted=true&sort=asc&limit=365`,
-      ) as { results?: Array<{ h: number; l: number }> };
+      )) as { results?: Array<{ h: number; l: number }> };
       const prices = aggData.results || [];
-      const week52High = prices.length ? Math.max(...prices.map((p) => p.h)).toString() : undefined;
-      const week52Low = prices.length ? Math.min(...prices.map((p) => p.l)).toString() : undefined;
+      const week52High = prices.length
+        ? Math.max(...prices.map((p) => p.h)).toString()
+        : undefined;
+      const week52Low = prices.length
+        ? Math.min(...prices.map((p) => p.l)).toString()
+        : undefined;
       // PER/PBR/dividendYield not available on Polygon.io free tier
-      return { per: undefined, pbr: undefined, dividendYield: undefined, week52High, week52Low };
+      return {
+        per: undefined,
+        pbr: undefined,
+        dividendYield: undefined,
+        week52High,
+        week52Low,
+      };
     } catch (err) {
       this.logger.error(`Polygon getFundamentals failed for ${symbol}`, err);
       return {};

@@ -31,13 +31,6 @@ describe('KrStockAdapter', () => {
     adapter = module.get<KrStockAdapter>(KrStockAdapter);
   });
 
-  function mockFetchToken() {
-    return jest.spyOn(global, 'fetch').mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockTokenResponse,
-    } as Response);
-  }
-
   describe('getQuote', () => {
     it('fetches token and returns correct StockQuote shape', async () => {
       const mockQuoteData = {
@@ -49,9 +42,16 @@ describe('KrStockAdapter', () => {
         },
       };
 
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockQuoteData } as Response);
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockQuoteData),
+        } as Response);
 
       const quote = await adapter.getQuote('005930');
 
@@ -64,7 +64,9 @@ describe('KrStockAdapter', () => {
     });
 
     it('returns zero-value quote on error', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('network error'));
+      jest
+        .spyOn(global, 'fetch')
+        .mockRejectedValueOnce(new Error('network error'));
 
       const quote = await adapter.getQuote('005930');
 
@@ -83,17 +85,27 @@ describe('KrStockAdapter', () => {
         },
       };
 
-      const fetchSpy = jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockQuoteData } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockQuoteData } as Response);
+      const fetchSpy = jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockQuoteData),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockQuoteData),
+        } as Response);
 
       await adapter.getQuote('005930');
       await adapter.getQuote('005930');
 
       // Token fetch should only happen once; second call reuses it
-      const tokenFetchCount = fetchSpy.mock.calls.filter(
-        (call) => (call[0] as string).includes('oauth2/tokenP'),
+      const tokenFetchCount = fetchSpy.mock.calls.filter((call) =>
+        (call[0] as string).includes('oauth2/tokenP'),
       ).length;
       expect(tokenFetchCount).toBe(1);
     });
@@ -122,9 +134,16 @@ describe('KrStockAdapter', () => {
         ],
       };
 
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockHistoryData } as Response);
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockHistoryData),
+        } as Response);
 
       const history = await adapter.getHistory('005930', '1d');
 
@@ -154,9 +173,16 @@ describe('KrStockAdapter', () => {
         ],
       };
 
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockHistoryData } as Response);
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockHistoryData),
+        } as Response);
 
       const history = await adapter.getHistory('005930', '1w');
 
@@ -172,9 +198,16 @@ describe('KrStockAdapter', () => {
     });
 
     it('returns empty array when output2 is missing', async () => {
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => ({}) } as Response);
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({}),
+        } as Response);
 
       const history = await adapter.getHistory('005930', '1d');
 
@@ -194,9 +227,16 @@ describe('KrStockAdapter', () => {
         },
       };
 
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockFundamentalsData } as Response);
+      jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockFundamentalsData),
+        } as Response);
 
       const fundamentals = await adapter.getFundamentals('005930');
 
@@ -208,7 +248,9 @@ describe('KrStockAdapter', () => {
     });
 
     it('returns empty object on error', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('auth failed'));
+      jest
+        .spyOn(global, 'fetch')
+        .mockRejectedValueOnce(new Error('auth failed'));
 
       const fundamentals = await adapter.getFundamentals('005930');
 
@@ -228,31 +270,48 @@ describe('KrStockAdapter', () => {
       };
 
       // First call: get token and quote
-      const fetchSpy = jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockQuoteData } as Response);
+      const fetchSpy = jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockQuoteData),
+        } as Response);
 
       await adapter.getQuote('005930');
 
       // Manually expire the token by setting tokenExpiry to past
-      (adapter as any).tokenExpiry = new Date(Date.now() - 1000);
+      (adapter as unknown as { tokenExpiry: Date }).tokenExpiry = new Date(
+        Date.now() - 1000,
+      );
 
       // Add mocks for next call (token refresh + quote)
       fetchSpy
-        .mockResolvedValueOnce({ ok: true, json: async () => mockTokenResponse } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => mockQuoteData } as Response);
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockQuoteData),
+        } as Response);
 
       await adapter.getQuote('005930');
 
       // Token endpoint should have been called twice (initial + refresh)
-      const tokenFetchCount = fetchSpy.mock.calls.filter(
-        (call) => (call[0] as string).includes('oauth2/tokenP'),
+      const tokenFetchCount = fetchSpy.mock.calls.filter((call) =>
+        (call[0] as string).includes('oauth2/tokenP'),
       ).length;
       expect(tokenFetchCount).toBe(2);
     });
 
     it('returns null token and throws when token fetch fails', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('network down'));
+      jest
+        .spyOn(global, 'fetch')
+        .mockRejectedValueOnce(new Error('network down'));
 
       const quote = await adapter.getQuote('005930');
 

@@ -28,13 +28,14 @@ export default function AlertSettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (data?.thresholds) setSelected(new Set(data.thresholds));
   }, [data]);
 
   function toggle(level: number) {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(level) ? next.delete(level) : next.add(level);
+      if (next.has(level)) { next.delete(level); } else { next.add(level); }
       return next;
     });
     setSaved(false);

@@ -34,7 +34,12 @@ describe('FavoritesService', () => {
   describe('findAll', () => {
     it('returns favorites list for user', async () => {
       const favorites = [
-        { id: '1', userId: 'u1', symbol: 'AAPL', stock: { symbol: 'AAPL', analytics: null } },
+        {
+          id: '1',
+          userId: 'u1',
+          symbol: 'AAPL',
+          stock: { symbol: 'AAPL', analytics: null },
+        },
       ];
       mockPrisma.favorite.findMany.mockResolvedValue(favorites);
 
@@ -65,7 +70,9 @@ describe('FavoritesService', () => {
 
       const result = await service.add('u1', 'AAPL');
 
-      expect(mockPrisma.stock.findUnique).toHaveBeenCalledWith({ where: { symbol: 'AAPL' } });
+      expect(mockPrisma.stock.findUnique).toHaveBeenCalledWith({
+        where: { symbol: 'AAPL' },
+      });
       expect(mockPrisma.favorite.create).toHaveBeenCalledWith({
         data: { userId: 'u1', symbol: 'AAPL' },
       });
@@ -75,15 +82,21 @@ describe('FavoritesService', () => {
     it('throws NotFoundException when stock does not exist', async () => {
       mockPrisma.stock.findUnique.mockResolvedValue(null);
 
-      await expect(service.add('u1', 'UNKNOWN')).rejects.toThrow(NotFoundException);
+      await expect(service.add('u1', 'UNKNOWN')).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockPrisma.favorite.create).not.toHaveBeenCalled();
     });
 
     it('throws ConflictException on duplicate favorite', async () => {
       mockPrisma.stock.findUnique.mockResolvedValue({ symbol: 'AAPL' });
-      mockPrisma.favorite.create.mockRejectedValue(new Error('Unique constraint failed'));
+      mockPrisma.favorite.create.mockRejectedValue(
+        new Error('Unique constraint failed'),
+      );
 
-      await expect(service.add('u1', 'AAPL')).rejects.toThrow(ConflictException);
+      await expect(service.add('u1', 'AAPL')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -107,7 +120,9 @@ describe('FavoritesService', () => {
     it('throws NotFoundException when favorite does not exist', async () => {
       mockPrisma.favorite.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove('u1', 'AAPL')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('u1', 'AAPL')).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockPrisma.favorite.delete).not.toHaveBeenCalled();
     });
   });
@@ -121,7 +136,9 @@ describe('FavoritesService', () => {
 
       const result = await service.getFavoriteSymbols('u1');
 
-      expect(mockPrisma.favorite.findMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+      expect(mockPrisma.favorite.findMany).toHaveBeenCalledWith({
+        where: { userId: 'u1' },
+      });
       expect(result).toEqual(['AAPL', '005930']);
     });
 

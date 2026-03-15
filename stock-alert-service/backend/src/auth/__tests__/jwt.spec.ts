@@ -19,19 +19,19 @@ describe('JWT validation', () => {
   it('throws on tampered token', () => {
     const token = jwtService.sign({ sub: 'user-1' });
     const tampered = token.slice(0, -3) + 'xxx';
-    expect(() => jwtService.verify(tampered)).toThrow();
+    expect((): unknown => jwtService.verify(tampered)).toThrow();
   });
 
   it('throws on expired token', async () => {
     const token = jwtService.sign({ sub: 'user-1' }, { expiresIn: '1ms' });
     await new Promise((r) => setTimeout(r, 5));
-    expect(() => jwtService.verify(token)).toThrow();
+    expect((): unknown => jwtService.verify(token)).toThrow();
   });
 
   it('throws on token signed with wrong secret', () => {
     const wrongService = new JwtService({ secret: 'wrong-secret' });
     const token = wrongService.sign({ sub: 'user-1' });
-    expect(() => jwtService.verify(token)).toThrow();
+    expect((): unknown => jwtService.verify(token)).toThrow();
   });
 
   it('payload sub maps to user id correctly', () => {

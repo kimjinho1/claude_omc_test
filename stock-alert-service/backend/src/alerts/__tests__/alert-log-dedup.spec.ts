@@ -1,6 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../../prisma/prisma.service';
-
 describe('AlertLog deduplication logic', () => {
   const DEDUP_HOURS = 24;
 
@@ -40,7 +37,11 @@ describe('AlertLog deduplication logic', () => {
 
     it('same level within 24h is duplicate', () => {
       const log = { ...recentAlert, level: 10 };
-      expect(log.userId === recentAlert.userId && log.symbol === recentAlert.symbol && log.level === recentAlert.level).toBe(true);
+      expect(
+        log.userId === recentAlert.userId &&
+          log.symbol === recentAlert.symbol &&
+          log.level === recentAlert.level,
+      ).toBe(true);
     });
 
     it('different level is not a duplicate', () => {

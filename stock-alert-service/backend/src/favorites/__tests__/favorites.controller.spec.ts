@@ -33,7 +33,12 @@ describe('FavoritesController', () => {
   describe('findAll', () => {
     it('returns favorites for the current user', async () => {
       const favorites = [
-        { id: '1', userId: 'user-123', symbol: 'AAPL', stock: { symbol: 'AAPL' } },
+        {
+          id: '1',
+          userId: 'user-123',
+          symbol: 'AAPL',
+          stock: { symbol: 'AAPL' },
+        },
       ];
       mockFavoritesService.findAll.mockResolvedValue(favorites);
 
@@ -79,7 +84,10 @@ describe('FavoritesController', () => {
 
       const result = await controller.remove(mockUser, '005930');
 
-      expect(mockFavoritesService.remove).toHaveBeenCalledWith('user-123', '005930');
+      expect(mockFavoritesService.remove).toHaveBeenCalledWith(
+        'user-123',
+        '005930',
+      );
       expect(result).toEqual(deleted);
     });
 
@@ -88,13 +96,19 @@ describe('FavoritesController', () => {
 
       await controller.remove(mockUser, 'msft');
 
-      expect(mockFavoritesService.remove).toHaveBeenCalledWith('user-123', 'MSFT');
+      expect(mockFavoritesService.remove).toHaveBeenCalledWith(
+        'user-123',
+        'MSFT',
+      );
     });
   });
 
   describe('JwtAuthGuard', () => {
     it('applies JwtAuthGuard at controller level', () => {
-      const guards = Reflect.getMetadata('__guards__', FavoritesController);
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        FavoritesController,
+      ) as unknown[];
       expect(guards).toBeDefined();
       expect(guards.some((g: unknown) => g === JwtAuthGuard)).toBe(true);
     });

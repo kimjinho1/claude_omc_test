@@ -31,7 +31,7 @@ test.describe('주식 상세 페이지 (인증 필요)', () => {
   // CI에서는 mock auth provider로 대체
   test.skip(!process.env.TEST_AUTH_TOKEN, '인증 토큰 필요');
 
-  test.beforeEach(async ({ page, context }) => {
+  test.beforeEach(async ({ context }) => {
     // 테스트용 세션 쿠키 주입
     await context.addCookies([
       {

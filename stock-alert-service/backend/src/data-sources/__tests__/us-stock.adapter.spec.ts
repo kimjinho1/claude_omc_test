@@ -18,6 +18,8 @@ const mockConfigService = {
 describe('UsStockAdapter', () => {
   let adapter: UsStockAdapter;
 
+  afterEach(() => jest.restoreAllMocks());
+
   beforeEach(async () => {
     jest.clearAllMocks();
     mockRedis.incr.mockResolvedValue(1);
@@ -41,7 +43,7 @@ describe('UsStockAdapter', () => {
       };
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => mockData,
+        json: () => Promise.resolve(mockData),
       } as Response);
 
       const quote = await adapter.getQuote('AAPL');
@@ -57,7 +59,7 @@ describe('UsStockAdapter', () => {
     it('returns zero-value quote when results array is empty', async () => {
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ results: [] }),
+        json: () => Promise.resolve({ results: [] }),
       } as Response);
 
       const quote = await adapter.getQuote('AAPL');
@@ -69,7 +71,9 @@ describe('UsStockAdapter', () => {
     });
 
     it('returns zero-value quote on fetch error', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('network error'));
+      jest
+        .spyOn(global, 'fetch')
+        .mockRejectedValueOnce(new Error('network error'));
 
       const quote = await adapter.getQuote('AAPL');
 
@@ -82,13 +86,27 @@ describe('UsStockAdapter', () => {
     it('returns array of OHLCVBar for 1d period', async () => {
       const mockData = {
         results: [
-          { t: 1700000000000, o: 145.0, h: 152.0, l: 144.0, c: 150.0, v: 500000 },
-          { t: 1700086400000, o: 150.0, h: 155.0, l: 149.0, c: 153.0, v: 600000 },
+          {
+            t: 1700000000000,
+            o: 145.0,
+            h: 152.0,
+            l: 144.0,
+            c: 150.0,
+            v: 500000,
+          },
+          {
+            t: 1700086400000,
+            o: 150.0,
+            h: 155.0,
+            l: 149.0,
+            c: 153.0,
+            v: 600000,
+          },
         ],
       };
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => mockData,
+        json: () => Promise.resolve(mockData),
       } as Response);
 
       const history = await adapter.getHistory('AAPL', '1d');
@@ -96,7 +114,7 @@ describe('UsStockAdapter', () => {
       expect(Array.isArray(history)).toBe(true);
       expect(history.length).toBe(2);
       expect(history[0]).toMatchObject({
-        date: expect.any(String),
+        date: expect.any(String) as unknown,
         open: '145',
         high: '152',
         low: '144',
@@ -108,12 +126,19 @@ describe('UsStockAdapter', () => {
     it('returns array of OHLCVBar for 1w period', async () => {
       const mockData = {
         results: [
-          { t: 1700000000000, o: 140.0, h: 158.0, l: 139.0, c: 155.0, v: 3000000 },
+          {
+            t: 1700000000000,
+            o: 140.0,
+            h: 158.0,
+            l: 139.0,
+            c: 155.0,
+            v: 3000000,
+          },
         ],
       };
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => mockData,
+        json: () => Promise.resolve(mockData),
       } as Response);
 
       const history = await adapter.getHistory('AAPL', '1w');
@@ -133,7 +158,7 @@ describe('UsStockAdapter', () => {
     it('returns empty array when results is missing', async () => {
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => ({}),
+        json: () => Promise.resolve({}),
       } as Response);
 
       const history = await adapter.getHistory('AAPL', '1d');
@@ -144,7 +169,6 @@ describe('UsStockAdapter', () => {
 
   describe('getFundamentals', () => {
     it('returns week52High and week52Low from aggs data', async () => {
-      const financialsData = { results: [] };
       const aggData = {
         results: [
           { h: 180.0, l: 120.0 },
@@ -153,9 +177,10 @@ describe('UsStockAdapter', () => {
         ],
       };
 
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({ ok: true, json: async () => financialsData } as Response)
-        .mockResolvedValueOnce({ ok: true, json: async () => aggData } as Response);
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(aggData),
+      } as Response);
 
       const fundamentals = await adapter.getFundamentals('AAPL');
 
@@ -182,13 +207,13 @@ describe('UsStockAdapter', () => {
       const mockData = { results: [{ c: 100, o: 99, v: 1000, t: Date.now() }] };
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => mockData,
+        json: () => Promise.resolve(mockData),
       } as Response);
 
       const setTimeoutSpy = jest
         .spyOn(global, 'setTimeout')
         .mockImplementation((fn: TimerHandler) => {
-          if (typeof fn === 'function') fn();
+          if (typeof fn === 'function') (fn as (...args: unknown[]) => void)();
           return 0 as unknown as ReturnType<typeof setTimeout>;
         });
 
@@ -201,7 +226,7 @@ describe('UsStockAdapter', () => {
       jest.spyOn(global, 'fetch').mockResolvedValueOnce({
         ok: false,
         status: 429,
-        text: async () => 'Too Many Requests',
+        text: () => Promise.resolve('Too Many Requests'),
       } as Response);
 
       // The adapter catches errors and returns a fallback, not re-throws

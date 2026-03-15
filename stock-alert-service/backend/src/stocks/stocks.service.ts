@@ -47,6 +47,7 @@ export class StocksService {
   async getQuote(symbol: string) {
     const cacheKey = `quote:${symbol}`;
     const cached = await this.redis.get(cacheKey);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     if (cached) return JSON.parse(cached);
 
     const stock = await this.prisma.stock.findUnique({ where: { symbol } });
@@ -61,6 +62,7 @@ export class StocksService {
   async getDetail(symbol: string) {
     const cacheKey = `detail:${symbol}`;
     const cached = await this.redis.get(cacheKey);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     if (cached) return JSON.parse(cached);
 
     const stock = await this.prisma.stock.findUnique({

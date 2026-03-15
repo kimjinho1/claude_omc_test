@@ -9,7 +9,12 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { DataSourcesModule } from '../data-sources/data-sources.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, DataSourcesModule, BullModule.registerQueue({ name: 'notifications' })],
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    DataSourcesModule,
+    BullModule.registerQueue({ name: 'notifications' }),
+  ],
   providers: [AlertsService, AnalyticsService, DropDetectorService],
   controllers: [AlertsController],
   exports: [AlertsService],
