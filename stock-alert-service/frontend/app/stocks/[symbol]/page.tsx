@@ -1,13 +1,17 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useRef } from 'react';
 import useSWR, { mutate } from 'swr';
 import { useSession } from 'next-auth/react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import Link from 'next/link';
 import DropBadge from '@/components/DropBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Recharts default margin + YAxis width
+const CHART_LEFT_OFFSET = 5 + 60; // marginLeft + yAxisWidth
+const CHART_RIGHT_OFFSET = 5;      // marginRight
 
 function fetcher(url: string, token: string) {
   return fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json());
@@ -29,6 +33,12 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? '';
   const [toggling, setToggling] = useState(false);
+
+  // Chart range zoom state
+  const [zoomOffset, setZoomOffset] = useState(0);
+  const [zoomCount, setZoomCount] = useState<number | null>(null);
+  const [pendingIdx, setPendingIdx] = useState<number | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: detail } = useSWR<StockDetail>(
     token ? `${API_URL}/stocks/${symbol}` : null,
@@ -58,6 +68,50 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
       setToggling(false);
     }
   }
+
+  const baseData = chart.slice(-60);
+  const displayData = zoomCount !== null
+    ? baseData.slice(zoomOffset, zoomOffset + zoomCount)
+    : baseData.slice(zoomOffset);
+
+  const isZoomed = zoomOffset > 0 || zoomCount !== null;
+
+  function getDataIndexFromClick(clientX: number): number | null {
+    const el = chartContainerRef.current;
+    if (!el || displayData.length === 0) return null;
+    const rect = el.getBoundingClientRect();
+    const dataAreaLeft = rect.left + CHART_LEFT_OFFSET;
+    const dataAreaWidth = rect.width - CHART_LEFT_OFFSET - CHART_RIGHT_OFFSET;
+    const clickX = clientX - dataAreaLeft;
+    if (clickX < 0 || clickX > dataAreaWidth) return null;
+    const ratio = clickX / dataAreaWidth;
+    return Math.min(Math.round(ratio * (displayData.length - 1)), displayData.length - 1);
+  }
+
+  function handleChartAreaClick(e: React.MouseEvent<HTMLDivElement>) {
+    const idx = getDataIndexFromClick(e.clientX);
+    if (idx === null) return;
+
+    if (pendingIdx === null) {
+      setPendingIdx(idx);
+    } else {
+      const start = Math.min(pendingIdx, idx);
+      const end = Math.max(pendingIdx, idx);
+      if (start < end) {
+        setZoomOffset((prev) => prev + start);
+        setZoomCount(end - start + 1);
+      }
+      setPendingIdx(null);
+    }
+  }
+
+  function resetZoom() {
+    setZoomOffset(0);
+    setZoomCount(null);
+    setPendingIdx(null);
+  }
+
+  const pendingDate = pendingIdx !== null ? displayData[pendingIdx]?.date : undefined;
 
   if (!detail) return <div className="p-8 text-gray-400">불러오는 중...</div>;
 
@@ -100,14 +154,36 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
 
       {chart.length > 0 && (
         <div className="mb-6 rounded-xl bg-gray-900 p-4">
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chart.slice(-60)}>
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval="preserveStartEnd" />
-              <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} width={60} />
-              <Tooltip contentStyle={{ background: '#111827', border: 'none', borderRadius: 8 }} />
-              <Line type="monotone" dataKey="close" stroke="#3b82f6" dot={false} strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs text-gray-400">
+              {pendingIdx !== null
+                ? `⬜ 종료점을 클릭하세요 (시작: ${pendingDate ?? ''})`
+                : '📍 차트 클릭 → 시작점, 재클릭 → 범위 확대'}
+            </span>
+            {isZoomed && (
+              <button onClick={resetZoom} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                전체 범위 보기
+              </button>
+            )}
+          </div>
+          {/* div-level click handler — more reliable than Recharts onClick */}
+          <div
+            ref={chartContainerRef}
+            style={{ cursor: 'crosshair' }}
+            onClick={handleChartAreaClick}
+          >
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={displayData} margin={{ top: 5, right: CHART_RIGHT_OFFSET, bottom: 5, left: 5 }}>
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval="preserveStartEnd" />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} width={60} />
+                <Tooltip contentStyle={{ background: '#111827', border: 'none', borderRadius: 8 }} />
+                <Line type="monotone" dataKey="close" stroke="#3b82f6" dot={false} strokeWidth={2} />
+                {pendingDate && (
+                  <ReferenceLine x={pendingDate} stroke="#f59e0b" strokeDasharray="4 2" strokeWidth={2} label={{ value: '시작', fill: '#f59e0b', fontSize: 10 }} />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
