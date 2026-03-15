@@ -37,7 +37,7 @@ Thumbs.db
 *.swo
 
 # AI tool settings (local only)
-.claude/
+.claude/settings.local.json
 .omc/
 
 # Python
