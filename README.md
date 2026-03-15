@@ -1,5 +1,5 @@
 # oh-my-claudecode (OMC) 찍먹
-정확한 정보는 아래 주소에서 확인
+정확한 정보는 아래 주소에서 확인  
 https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications
 
 ## 목차
