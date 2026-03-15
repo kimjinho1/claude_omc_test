@@ -1,0 +1,73 @@
+# Stock Alert Service — Implementation Progress
+
+## Completed: All 8 User Stories
+
+### US-001: Monorepo Scaffolding
+- Next.js 14 App Router (TypeScript, Tailwind) in frontend/
+- NestJS in backend/ with full module structure
+- docker-compose.yml: PostgreSQL 16 + Redis 7 + backend with healthchecks
+- Prisma schema: Decimal(15,4) prices, StockAnalytics separate table, PushSubscription @@unique([userId,endpoint])
+- All env vars in backend/.env.example and frontend/.env.local.example
+
+### US-002: Auth System
+- frontend/auth.ts: NextAuth v5 Google OAuth, JWT session, 3600s maxAge, backend sync on first login
+- frontend/lib/api.ts: Bearer token auto-attach, 401 → signOut()
+- backend/src/auth/: JwtStrategy, JwtAuthGuard, AuthService.syncUser(), IOAuthProvider interface
+- Types augmented in frontend/types/next-auth.d.ts
+
+### US-003: Stock Data Adapters + Seed
+- IStockDataSource interface: getQuote/getHistory/getFundamentals
+- KrStockAdapter: 한국투자증권 REST API with 23h token refresh
+- UsStockAdapter: Polygon.io with Redis token bucket (5 req/min, 1min window)
+- Seed JSON: kospi200.json (30 stocks), sp500.json (40 stocks), qqq.json (25 stocks)
+- seed.ts: dedup by symbol, tags indexMembership, prisma.stock.upsert()
+- Stocks endpoints: /stocks, /stocks/search, /stocks/:symbol, /stocks/:symbol/chart
+
+### US-004: Favorites CRUD
+- FavoritesService: findAll, add (conflict guard), remove, getFavoriteSymbols
+- FavoritesController: GET/POST/DELETE /favorites/:symbol, JwtAuthGuard protected
+
+### US-005: Drop Detection Batch
+- analytics.service.ts: 6-month high Decimal calculation, StockAnalytics.upsert()
+- drop-detector.service.ts: Decimal precision drop%, 5 levels (10/15/20/25/30%)
+- Cron: KR '30 7 * * 1-5' UTC, US '30 21 * * 1-5' UTC
+- date-holidays for KR+US holiday skip
+- AlertLog dedup: 24h per userId+symbol+level
+- Favorites override: always notify all 5 levels
+
+### US-006: PWA Web Push Notifications
+- manifest.json: PWA manifest at frontend/public/
+- NotificationsService: web-push VAPID, sendToUser with 410 cleanup
+- NotificationsController: POST /notifications/subscribe, DELETE /notifications/unsubscribe
+- NotificationWorker: BullMQ @Processor('notifications') WorkerHost
+- BullModule.forRootAsync wired in app.module.ts with Redis config
+- PUT /users/alert-settings: thresholds array saved per user
+
+### US-007: Frontend UI
+- app/(auth)/login/page.tsx: Google sign-in button
+- app/dashboard/page.tsx: KR/US filter, SWR 30s refresh, stock list
+- app/stocks/[symbol]/page.tsx: Recharts LineChart, 8 indicator cards, DropBadge
+- app/favorites/page.tsx: favorites list with remove
+- app/settings/alerts/page.tsx: 5 level checkboxes with color coding
+- components/DropBadge.tsx: color-coded badge (yellow/orange/red/dark-red/black)
+- Next.js build: ✓ all 8 routes compiled successfully
+
+### US-008: Tests + Docker
+- alerts/__tests__/drop-detector.spec.ts: 8 tests (getHitLevel + Decimal precision)
+- alerts/__tests__/alert-log-dedup.spec.ts: 8 tests (24h window, cross-level)
+- auth/__tests__/jwt.spec.ts: 5 tests (sign/verify, tamper, expiry, wrong secret)
+- All 25 tests PASS (3 suites, 0.581s)
+- docker-compose.yml: PostgreSQL + Redis + backend healthchecks
+
+## Key Decisions
+- Polygon.io free tier (5 req/min, no daily cap) over Alpha Vantage (25 req/day cap)
+- SWR 30s polling over Socket.io (Vercel-compatible, simpler)
+- Decimal(15,4) for all prices (not Float)
+- StockAnalytics separate table (not computed on-demand)
+- PushSubscription @@unique([userId, endpoint]) for multi-device support
+- Cron 21:30 UTC for US (handles EST/EDT post-close always)
+
+## Build Status
+- Backend: ✅ npm run build passes (dist/main.js generated)
+- Frontend: ✅ npm run build passes (8 routes compiled)
+- Tests: ✅ 25/25 pass
