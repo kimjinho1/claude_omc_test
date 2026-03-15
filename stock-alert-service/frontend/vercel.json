@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@next_public_api_url",
+    "NEXTAUTH_URL": "@nextauth_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "GOOGLE_CLIENT_ID": "@google_client_id",
+    "GOOGLE_CLIENT_SECRET": "@google_client_secret",
+    "JWT_SECRET": "@jwt_secret",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "@vapid_public_key",
+    "INTERNAL_API_URL": "@internal_api_url"
+  }
+}
