@@ -18,7 +18,17 @@ export class StocksService {
   ) {}
 
   async findAll(market?: string) {
-    const where = market ? { market: market.toUpperCase() } : {};
+    let where = {};
+    if (market) {
+      const m = market.toUpperCase();
+      if (m === 'KR') {
+        where = { market: 'KOSPI' };
+      } else if (m === 'US') {
+        where = { market: { in: ['NYSE', 'NASDAQ'] } };
+      } else {
+        where = { market: m };
+      }
+    }
     return this.prisma.stock.findMany({ where, orderBy: { symbol: 'asc' } });
   }
 
