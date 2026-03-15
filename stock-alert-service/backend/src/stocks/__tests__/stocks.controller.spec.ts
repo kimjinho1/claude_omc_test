@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing';
 import { StocksController } from '../stocks.controller';
 import { StocksService } from '../stocks.service';
@@ -19,9 +22,7 @@ describe('StocksController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [StocksController],
-      providers: [
-        { provide: StocksService, useValue: mockStocksService },
-      ],
+      providers: [{ provide: StocksService, useValue: mockStocksService }],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })

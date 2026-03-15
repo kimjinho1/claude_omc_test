@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
@@ -15,9 +16,7 @@ describe('UsersController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [
-        { provide: UsersService, useValue: mockUsersService },
-      ],
+      providers: [{ provide: UsersService, useValue: mockUsersService }],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
@@ -58,7 +57,10 @@ describe('UsersController', () => {
         { thresholds: [15, 25] },
       );
 
-      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith('user-1', [15, 25]);
+      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith(
+        'user-1',
+        [15, 25],
+      );
       expect(result).toEqual(updated);
     });
 
@@ -71,7 +73,10 @@ describe('UsersController', () => {
         { thresholds: [10] },
       );
 
-      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith('user-new', [10]);
+      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith(
+        'user-new',
+        [10],
+      );
       expect(result).toEqual(created);
     });
 
@@ -85,7 +90,10 @@ describe('UsersController', () => {
         { thresholds: allThresholds },
       );
 
-      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith('user-1', allThresholds);
+      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith(
+        'user-1',
+        allThresholds,
+      );
       expect(result).toEqual(saved);
     });
 
@@ -98,7 +106,10 @@ describe('UsersController', () => {
         { thresholds: [] },
       );
 
-      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith('user-1', []);
+      expect(usersService.upsertAlertSettings).toHaveBeenCalledWith(
+        'user-1',
+        [],
+      );
       expect(result).toEqual(cleared);
     });
   });

@@ -13,7 +13,12 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
-  async upsert(dto: { email: string; name?: string; image?: string; provider: string }) {
+  async upsert(dto: {
+    email: string;
+    name?: string;
+    image?: string;
+    provider: string;
+  }) {
     return this.prisma.user.upsert({
       where: { email: dto.email },
       update: { name: dto.name, image: dto.image },

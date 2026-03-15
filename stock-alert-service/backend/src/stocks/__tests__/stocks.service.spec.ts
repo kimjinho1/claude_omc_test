@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { StocksService } from '../stocks.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -123,9 +124,7 @@ describe('StocksService', () => {
       expect(mockPrisma.stock.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            OR: expect.arrayContaining([
-              { symbol: { contains: 'AAPL' } },
-            ]),
+            OR: expect.arrayContaining([{ symbol: { contains: 'AAPL' } }]),
           }),
         }),
       );
@@ -207,14 +206,21 @@ describe('StocksService', () => {
 
     it('fetches live quote and caches on cache miss', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockPrisma.stock.findUnique.mockResolvedValue({ symbol: 'AAPL', market: 'NYSE' });
+      mockPrisma.stock.findUnique.mockResolvedValue({
+        symbol: 'AAPL',
+        market: 'NYSE',
+      });
       const quote = { price: 180 };
       mockUsAdapter.getQuote.mockResolvedValue(quote);
       mockRedis.setex.mockResolvedValue('OK');
 
       const result = await service.getQuote('AAPL');
 
-      expect(mockRedis.setex).toHaveBeenCalledWith('quote:AAPL', 30, JSON.stringify(quote));
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'quote:AAPL',
+        30,
+        JSON.stringify(quote),
+      );
       expect(result).toEqual(quote);
     });
 

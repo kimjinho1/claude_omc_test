@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '../users.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -32,12 +34,18 @@ describe('UsersService', () => {
 
   describe('findById', () => {
     it('returns user when found', async () => {
-      const user = { id: 'user-1', email: 'test@example.com', name: 'Test User' };
+      const user = {
+        id: 'user-1',
+        email: 'test@example.com',
+        name: 'Test User',
+      };
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
 
       const result = await service.findById('user-1');
 
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 'user-1' } });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+      });
       expect(result).toEqual(user);
     });
 
@@ -57,7 +65,9 @@ describe('UsersService', () => {
 
       const result = await service.findByEmail('test@example.com');
 
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+      });
       expect(result).toEqual(user);
     });
   });
@@ -121,7 +131,11 @@ describe('UsersService', () => {
     });
 
     it('handles upsert with undefined optional fields', async () => {
-      const user = { id: 'user-1', email: 'test@example.com', provider: 'google' };
+      const user = {
+        id: 'user-1',
+        email: 'test@example.com',
+        provider: 'google',
+      };
       (prisma.user.upsert as jest.Mock).mockResolvedValue(user);
 
       await service.upsert({ email: 'test@example.com', provider: 'google' });
@@ -146,7 +160,9 @@ describe('UsersService', () => {
 
       const result = await service.getAlertSettings('user-1');
 
-      expect(prisma.alertSetting.findUnique).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
+      expect(prisma.alertSetting.findUnique).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
       expect(result).toEqual(settings);
     });
 

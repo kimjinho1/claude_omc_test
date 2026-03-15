@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationWorker, NotificationJobData } from '../notification.worker';
+import {
+  NotificationWorker,
+  NotificationJobData,
+} from '../notification.worker';
 import { NotificationsService } from '../notifications.service';
 import { Job } from 'bullmq';
 
@@ -7,7 +10,10 @@ const mockNotificationsService = {
   sendToUser: jest.fn(),
 };
 
-function createMockJob(data: NotificationJobData, id = 'job-1'): Job<NotificationJobData> {
+function createMockJob(
+  data: NotificationJobData,
+  id = 'job-1',
+): Job<NotificationJobData> {
   return {
     id,
     data,
@@ -68,7 +74,10 @@ describe('NotificationWorker', () => {
 
       await worker.process(job);
 
-      expect(mockNotificationsService.sendToUser).toHaveBeenCalledWith('user-99', jobData.payload);
+      expect(mockNotificationsService.sendToUser).toHaveBeenCalledWith(
+        'user-99',
+        jobData.payload,
+      );
     });
 
     it('does not crash when sendToUser throws an error', async () => {
@@ -82,7 +91,9 @@ describe('NotificationWorker', () => {
         },
       };
       const job = createMockJob(jobData, 'job-fail');
-      mockNotificationsService.sendToUser.mockRejectedValue(new Error('Push service down'));
+      mockNotificationsService.sendToUser.mockRejectedValue(
+        new Error('Push service down'),
+      );
 
       // process() should propagate but BullMQ handles the error — verify it doesn't swallow silently
       await expect(worker.process(job)).rejects.toThrow('Push service down');

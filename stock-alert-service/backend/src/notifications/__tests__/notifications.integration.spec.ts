@@ -3,12 +3,21 @@ import { Test } from '@nestjs/testing';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule } from '@nestjs/config';
-import { Controller, Post, Delete, Put, Body, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Delete,
+  Put,
+  Body,
+  Get,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { CurrentUser } from '../../auth/current-user.decorator';
 import request from 'supertest';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { Application } from 'express';
 
 const TEST_SECRET = 'notifications-test-secret';
 const MOCK_USER = { id: 'user-notify-1', email: 'notify@test.com' };
@@ -29,10 +38,13 @@ class TestNotificationsController {
 
   @Delete('notifications/unsubscribe')
   @UseGuards(JwtAuthGuard)
-  unsubscribe(@CurrentUser() user: { id: string }, @Body() body: { endpoint: string }) {
+  unsubscribe(
+    @CurrentUser() user: { id: string },
+    @Body() body: { endpoint: string },
+  ) {
     if (subscriptions[user.id]) {
       subscriptions[user.id] = subscriptions[user.id].filter(
-        (s: any) => s.endpoint !== body.endpoint,
+        (s: { endpoint: string }) => s.endpoint !== body.endpoint,
       );
     }
     return { ok: true };
@@ -40,7 +52,10 @@ class TestNotificationsController {
 
   @Put('users/alert-settings')
   @UseGuards(JwtAuthGuard)
-  saveAlertSettings(@CurrentUser() user: { id: string }, @Body() body: { thresholds: number[] }) {
+  saveAlertSettings(
+    @CurrentUser() user: { id: string },
+    @Body() body: { thresholds: number[] },
+  ) {
     alertSettings[user.id] = body.thresholds;
     return { thresholds: body.thresholds };
   }
@@ -60,7 +75,7 @@ class TestJwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: TEST_SECRET,
     });
   }
-  async validate(payload: { sub: string; email: string }) {
+  validate(payload: { sub: string; email: string }) {
     if (payload.sub === MOCK_USER.id) return MOCK_USER;
     return null;
   }
@@ -94,14 +109,14 @@ describe('Notifications & Alert Settings integration', () => {
 
   describe('POST /notifications/subscribe', () => {
     it('returns 401 without token', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .post('/notifications/subscribe')
         .send({ endpoint: 'https://push.example.com/abc' })
         .expect(401);
     });
 
     it('saves push subscription with valid token', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .post('/notifications/subscribe')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -115,14 +130,14 @@ describe('Notifications & Alert Settings integration', () => {
 
   describe('PUT /users/alert-settings', () => {
     it('returns 401 without token', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .put('/users/alert-settings')
         .send({ thresholds: [10, 20] })
         .expect(401);
     });
 
     it('saves thresholds array', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .put('/users/alert-settings')
         .set('Authorization', `Bearer ${token}`)
         .send({ thresholds: [10, 15, 20] })
@@ -131,7 +146,7 @@ describe('Notifications & Alert Settings integration', () => {
     });
 
     it('retrieves saved thresholds', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .get('/users/alert-settings')
         .set('Authorization', `Bearer ${token}`)
         .expect(200)
@@ -139,14 +154,14 @@ describe('Notifications & Alert Settings integration', () => {
     });
 
     it('overwrites thresholds on second save', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .put('/users/alert-settings')
         .set('Authorization', `Bearer ${token}`)
         .send({ thresholds: [20, 30] })
         .expect(200)
         .expect({ thresholds: [20, 30] });
 
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Application)
         .get('/users/alert-settings')
         .set('Authorization', `Bearer ${token}`)
         .expect(200)

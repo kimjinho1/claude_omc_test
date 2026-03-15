@@ -1,6 +1,6 @@
 export interface StockQuote {
   symbol: string;
-  price: string;       // Decimal string for precision
+  price: string; // Decimal string for precision
   change: string;
   changePercent: string;
   volume?: number;

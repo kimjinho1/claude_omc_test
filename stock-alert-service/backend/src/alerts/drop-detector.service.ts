@@ -41,7 +41,9 @@ export class DropDetectorService {
       const dropPct = high6m.minus(latest.price).div(high6m).times(100);
 
       for (const user of users) {
-        const isFavorite = user.favorites.some((f) => f.symbol === stock.symbol);
+        const isFavorite = user.favorites.some(
+          (f) => f.symbol === stock.symbol,
+        );
         const thresholds = isFavorite
           ? DROP_LEVELS // favorites always get all levels
           : (user.alertSettings[0]?.thresholds ?? []);
@@ -49,7 +51,11 @@ export class DropDetectorService {
         const hitLevel = this.getHitLevel(dropPct, thresholds);
         if (hitLevel === null) continue;
 
-        const alreadySent = await this.checkDuplicate(user.id, stock.symbol, hitLevel);
+        const alreadySent = await this.checkDuplicate(
+          user.id,
+          stock.symbol,
+          hitLevel,
+        );
         if (alreadySent) continue;
 
         await this.prisma.alertLog.create({
@@ -83,7 +89,11 @@ export class DropDetectorService {
     return null;
   }
 
-  private async checkDuplicate(userId: string, symbol: string, level: number): Promise<boolean> {
+  private async checkDuplicate(
+    userId: string,
+    symbol: string,
+    level: number,
+  ): Promise<boolean> {
     const since = new Date(Date.now() - DEDUP_HOURS * 60 * 60 * 1000);
     const existing = await this.prisma.alertLog.findFirst({
       where: { userId, symbol, level, sentAt: { gte: since } },

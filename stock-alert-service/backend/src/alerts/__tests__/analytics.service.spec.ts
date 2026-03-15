@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AnalyticsService } from '../analytics.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -56,7 +58,14 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ symbol: '005930', price: '88000', change: '0', changePercent: '0', volume: 1000000, timestamp: new Date() });
+      krAdapter.getQuote.mockResolvedValue({
+        symbol: '005930',
+        price: '88000',
+        change: '0',
+        changePercent: '0',
+        volume: 1000000,
+        timestamp: new Date(),
+      });
 
       await service.updateAnalytics('KR');
 
@@ -71,7 +80,10 @@ describe('AnalyticsService', () => {
         expect.objectContaining({
           where: { symbol: '005930' },
           update: expect.objectContaining({ high6m: new Decimal('90000') }),
-          create: expect.objectContaining({ symbol: '005930', high6m: new Decimal('90000') }),
+          create: expect.objectContaining({
+            symbol: '005930',
+            high6m: new Decimal('90000'),
+          }),
         }),
       );
     });
@@ -79,7 +91,11 @@ describe('AnalyticsService', () => {
     it('uses US adapter for US market', async () => {
       const stocks = [{ symbol: 'AAPL', market: 'NASDAQ' }];
       const stocksWithHistory = [
-        { symbol: 'AAPL', market: 'NASDAQ', priceHistory: [{ price: new Decimal('200') }] },
+        {
+          symbol: 'AAPL',
+          market: 'NASDAQ',
+          priceHistory: [{ price: new Decimal('200') }],
+        },
       ];
 
       (prisma.stock.findMany as jest.Mock)
@@ -87,7 +103,14 @@ describe('AnalyticsService', () => {
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      usAdapter.getQuote.mockResolvedValue({ symbol: 'AAPL', price: '195', change: '0', changePercent: '0', volume: 50000000, timestamp: new Date() });
+      usAdapter.getQuote.mockResolvedValue({
+        symbol: 'AAPL',
+        price: '195',
+        change: '0',
+        changePercent: '0',
+        volume: 50000000,
+        timestamp: new Date(),
+      });
 
       await service.updateAnalytics('US');
 
@@ -97,13 +120,21 @@ describe('AnalyticsService', () => {
 
     it('skips stocks with no price history', async () => {
       const stocks = [{ symbol: 'EMPTY', market: 'KOSPI' }];
-      const stocksWithHistory = [{ symbol: 'EMPTY', market: 'KOSPI', priceHistory: [] }];
+      const stocksWithHistory = [
+        { symbol: 'EMPTY', market: 'KOSPI', priceHistory: [] },
+      ];
 
       (prisma.stock.findMany as jest.Mock)
         .mockResolvedValueOnce(stocks)
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ symbol: 'EMPTY', price: '50000', change: '0', changePercent: '0', timestamp: new Date() });
+      krAdapter.getQuote.mockResolvedValue({
+        symbol: 'EMPTY',
+        price: '50000',
+        change: '0',
+        changePercent: '0',
+        timestamp: new Date(),
+      });
 
       await service.updateAnalytics('KR');
 
@@ -116,19 +147,36 @@ describe('AnalyticsService', () => {
         { price: new Decimal('150') },
         { price: new Decimal('120') },
       ];
-      const stocksWithHistory = [{ symbol: 'TEST', market: 'KOSPI', priceHistory }];
+      const stocksWithHistory = [
+        { symbol: 'TEST', market: 'KOSPI', priceHistory },
+      ];
 
       (prisma.stock.findMany as jest.Mock)
         .mockResolvedValueOnce([{ symbol: 'TEST', market: 'KOSPI' }])
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ symbol: 'TEST', price: '110', change: '0', changePercent: '0', volume: 500, timestamp: new Date() });
+      krAdapter.getQuote.mockResolvedValue({
+        symbol: 'TEST',
+        price: '110',
+        change: '0',
+        changePercent: '0',
+        volume: 500,
+        timestamp: new Date(),
+      });
 
       await service.updateAnalytics('KR');
 
-      const upsertCall = (prisma.stockAnalytics.upsert as jest.Mock).mock.calls[0][0];
-      expect(upsertCall.update.high6m.toString()).toBe('150');
+      const upsertCall = (
+        (prisma.stockAnalytics.upsert as jest.Mock).mock.calls[0] as [
+          Record<string, unknown>,
+        ]
+      )[0];
+      expect(
+        (
+          upsertCall.update as { high6m: { toString(): string } }
+        ).high6m.toString(),
+      ).toBe('150');
     });
 
     it('same high no change: upserts with identical high6m value', async () => {
@@ -136,19 +184,36 @@ describe('AnalyticsService', () => {
         { price: new Decimal('200') },
         { price: new Decimal('200') },
       ];
-      const stocksWithHistory = [{ symbol: 'FLAT', market: 'KOSPI', priceHistory }];
+      const stocksWithHistory = [
+        { symbol: 'FLAT', market: 'KOSPI', priceHistory },
+      ];
 
       (prisma.stock.findMany as jest.Mock)
         .mockResolvedValueOnce([{ symbol: 'FLAT', market: 'KOSPI' }])
         .mockResolvedValueOnce(stocksWithHistory);
       (prisma.stockPrice.create as jest.Mock).mockResolvedValue({});
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
-      krAdapter.getQuote.mockResolvedValue({ symbol: 'FLAT', price: '200', change: '0', changePercent: '0', volume: 0, timestamp: new Date() });
+      krAdapter.getQuote.mockResolvedValue({
+        symbol: 'FLAT',
+        price: '200',
+        change: '0',
+        changePercent: '0',
+        volume: 0,
+        timestamp: new Date(),
+      });
 
       await service.updateAnalytics('KR');
 
-      const upsertCall = (prisma.stockAnalytics.upsert as jest.Mock).mock.calls[0][0];
-      expect(upsertCall.update.high6m.toString()).toBe('200');
+      const upsertCall = (
+        (prisma.stockAnalytics.upsert as jest.Mock).mock.calls[0] as [
+          Record<string, unknown>,
+        ]
+      )[0];
+      expect(
+        (
+          upsertCall.update as { high6m: { toString(): string } }
+        ).high6m.toString(),
+      ).toBe('200');
     });
 
     it('6-month window cutoff: uses 180-day lookback', async () => {
@@ -158,12 +223,22 @@ describe('AnalyticsService', () => {
 
       await service.updateAnalytics('KR');
 
-      const secondCall = (prisma.stock.findMany as jest.Mock).mock.calls[1][0];
-      const cutoff: Date = secondCall.include.priceHistory.where.recordedAt.gte;
+      const secondCall = (
+        (prisma.stock.findMany as jest.Mock).mock.calls[1] as [
+          Record<string, unknown>,
+        ]
+      )[0];
+      const cutoff: Date = (
+        secondCall.include as {
+          priceHistory: { where: { recordedAt: { gte: Date } } };
+        }
+      ).priceHistory.where.recordedAt.gte;
       expect(cutoff).toBeInstanceOf(Date);
 
       const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
-      expect(Math.abs(cutoff.getTime() - sixMonthsAgo.getTime())).toBeLessThan(5000);
+      expect(Math.abs(cutoff.getTime() - sixMonthsAgo.getTime())).toBeLessThan(
+        5000,
+      );
     });
 
     it('continues processing if getQuote fails for one stock', async () => {
@@ -173,7 +248,11 @@ describe('AnalyticsService', () => {
       ];
       const stocksWithHistory = [
         { symbol: 'FAIL', market: 'KOSPI', priceHistory: [] },
-        { symbol: 'OK', market: 'KOSPI', priceHistory: [{ price: new Decimal('100') }] },
+        {
+          symbol: 'OK',
+          market: 'KOSPI',
+          priceHistory: [{ price: new Decimal('100') }],
+        },
       ];
 
       (prisma.stock.findMany as jest.Mock)
@@ -183,7 +262,14 @@ describe('AnalyticsService', () => {
       (prisma.stockAnalytics.upsert as jest.Mock).mockResolvedValue({});
       krAdapter.getQuote
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({ symbol: 'OK', price: '100', change: '0', changePercent: '0', volume: 1000, timestamp: new Date() });
+        .mockResolvedValueOnce({
+          symbol: 'OK',
+          price: '100',
+          change: '0',
+          changePercent: '0',
+          volume: 1000,
+          timestamp: new Date(),
+        });
 
       await expect(service.updateAnalytics('KR')).resolves.not.toThrow();
     });

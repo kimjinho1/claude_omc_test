@@ -9,7 +9,9 @@ import { NotificationsService } from '../notifications.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import webpush from 'web-push';
 
-const mockSendNotification = webpush.sendNotification as jest.MockedFunction<typeof webpush.sendNotification>;
+const mockSendNotification = webpush.sendNotification as jest.MockedFunction<
+  typeof webpush.sendNotification
+>;
 
 const mockPrisma = {
   pushSubscription: {
@@ -67,7 +69,10 @@ describe('NotificationsService', () => {
 
       expect(mockPrisma.pushSubscription.upsert).toHaveBeenCalledWith({
         where: { userId_endpoint: { userId, endpoint: subscription.endpoint } },
-        update: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
+        update: {
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth,
+        },
         create: {
           userId,
           endpoint: subscription.endpoint,
@@ -96,33 +101,64 @@ describe('NotificationsService', () => {
       await service.subscribe(userId, subscription);
 
       expect(mockPrisma.pushSubscription.upsert).toHaveBeenCalledTimes(1);
-      const call = mockPrisma.pushSubscription.upsert.mock.calls[0][0];
-      expect(call.update.p256dh).toBe('new-key-p256dh');
+      const [callArg] = mockPrisma.pushSubscription.upsert.mock.calls[0] as [
+        Record<string, unknown>,
+      ];
+      expect((callArg as { update: { p256dh: string } }).update.p256dh).toBe(
+        'new-key-p256dh',
+      );
     });
   });
 
   describe('sendToUser', () => {
     it('retrieves all subscriptions for user and calls sendNotification for each', async () => {
       const userId = 'user-1';
-      const payload = { title: 'Alert', body: 'Price dropped', symbol: 'AAPL', level: 10 };
+      const payload = {
+        title: 'Alert',
+        body: 'Price dropped',
+        symbol: 'AAPL',
+        level: 10,
+      };
       const subs = [
-        { id: 'sub-1', userId, endpoint: 'https://push.example.com/sub1', p256dh: 'key1', auth: 'auth1' },
-        { id: 'sub-2', userId, endpoint: 'https://push.example.com/sub2', p256dh: 'key2', auth: 'auth2' },
+        {
+          id: 'sub-1',
+          userId,
+          endpoint: 'https://push.example.com/sub1',
+          p256dh: 'key1',
+          auth: 'auth1',
+        },
+        {
+          id: 'sub-2',
+          userId,
+          endpoint: 'https://push.example.com/sub2',
+          p256dh: 'key2',
+          auth: 'auth2',
+        },
       ];
 
       mockPrisma.pushSubscription.findMany.mockResolvedValue(subs);
-      mockSendNotification.mockResolvedValue({} as any);
+      mockSendNotification.mockResolvedValue(
+        {} as unknown as import('web-push').SendResult,
+      );
 
       await service.sendToUser(userId, payload);
 
-      expect(mockPrisma.pushSubscription.findMany).toHaveBeenCalledWith({ where: { userId } });
+      expect(mockPrisma.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { userId },
+      });
       expect(mockSendNotification).toHaveBeenCalledTimes(2);
       expect(mockSendNotification).toHaveBeenCalledWith(
-        { endpoint: subs[0].endpoint, keys: { p256dh: subs[0].p256dh, auth: subs[0].auth } },
+        {
+          endpoint: subs[0].endpoint,
+          keys: { p256dh: subs[0].p256dh, auth: subs[0].auth },
+        },
         JSON.stringify(payload),
       );
       expect(mockSendNotification).toHaveBeenCalledWith(
-        { endpoint: subs[1].endpoint, keys: { p256dh: subs[1].p256dh, auth: subs[1].auth } },
+        {
+          endpoint: subs[1].endpoint,
+          keys: { p256dh: subs[1].p256dh, auth: subs[1].auth },
+        },
         JSON.stringify(payload),
       );
     });
@@ -137,10 +173,27 @@ describe('NotificationsService', () => {
 
     it('removes invalid endpoint (410 status) and continues sending to others', async () => {
       const userId = 'user-1';
-      const payload = { title: 'Alert', body: 'Price dropped', symbol: 'AAPL', level: 10 };
+      const payload = {
+        title: 'Alert',
+        body: 'Price dropped',
+        symbol: 'AAPL',
+        level: 10,
+      };
       const subs = [
-        { id: 'sub-gone', userId, endpoint: 'https://push.example.com/gone', p256dh: 'key1', auth: 'auth1' },
-        { id: 'sub-valid', userId, endpoint: 'https://push.example.com/valid', p256dh: 'key2', auth: 'auth2' },
+        {
+          id: 'sub-gone',
+          userId,
+          endpoint: 'https://push.example.com/gone',
+          p256dh: 'key1',
+          auth: 'auth1',
+        },
+        {
+          id: 'sub-valid',
+          userId,
+          endpoint: 'https://push.example.com/valid',
+          p256dh: 'key2',
+          auth: 'auth2',
+        },
       ];
 
       mockPrisma.pushSubscription.findMany.mockResolvedValue(subs);
@@ -148,12 +201,14 @@ describe('NotificationsService', () => {
       const goneError = Object.assign(new Error('Gone'), { statusCode: 410 });
       mockSendNotification
         .mockRejectedValueOnce(goneError)
-        .mockResolvedValueOnce({} as any);
+        .mockResolvedValueOnce({} as unknown as import('web-push').SendResult);
       mockPrisma.pushSubscription.delete.mockResolvedValue({});
 
       await service.sendToUser(userId, payload);
 
-      expect(mockPrisma.pushSubscription.delete).toHaveBeenCalledWith({ where: { id: 'sub-gone' } });
+      expect(mockPrisma.pushSubscription.delete).toHaveBeenCalledWith({
+        where: { id: 'sub-gone' },
+      });
       expect(mockSendNotification).toHaveBeenCalledTimes(2);
     });
 
@@ -161,11 +216,19 @@ describe('NotificationsService', () => {
       const userId = 'user-1';
       const payload = { title: 'Alert', body: 'Test' };
       const subs = [
-        { id: 'sub-1', userId, endpoint: 'https://push.example.com/sub1', p256dh: 'key1', auth: 'auth1' },
+        {
+          id: 'sub-1',
+          userId,
+          endpoint: 'https://push.example.com/sub1',
+          p256dh: 'key1',
+          auth: 'auth1',
+        },
       ];
 
       mockPrisma.pushSubscription.findMany.mockResolvedValue(subs);
-      mockSendNotification.mockRejectedValueOnce(new Error('temporary failure'));
+      mockSendNotification.mockRejectedValueOnce(
+        new Error('temporary failure'),
+      );
 
       await service.sendToUser(userId, payload);
 
