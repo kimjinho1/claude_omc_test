@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
 const DROP_LEVELS = [10, 15, 20, 25, 30];
@@ -12,7 +13,7 @@ export class DropDetectorService {
 
   constructor(
     private prisma: PrismaService,
-    private notifications: NotificationsService,
+    @InjectQueue('notifications') private notificationsQueue: Queue,
   ) {}
 
   async detectAndAlert(market: string) {
@@ -60,11 +61,14 @@ export class DropDetectorService {
           },
         });
 
-        await this.notifications.sendToUser(user.id, {
-          title: `${stock.name} 하락 알림`,
-          body: `${stock.symbol} 전고점 대비 ${dropPct.toFixed(1)}% 하락 (${hitLevel}% 단계)`,
-          symbol: stock.symbol,
-          level: hitLevel,
+        await this.notificationsQueue.add('send', {
+          userId: user.id,
+          payload: {
+            title: `${stock.name} 하락 알림`,
+            body: `${stock.symbol} 전고점 대비 ${dropPct.toFixed(1)}% 하락 (${hitLevel}% 단계)`,
+            symbol: stock.symbol,
+            level: hitLevel,
+          },
         });
       }
     }

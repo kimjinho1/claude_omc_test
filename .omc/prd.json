@@ -40,7 +40,7 @@
       "acceptanceCriteria": [
         "backend/src/data-sources/interfaces/stock-data-source.interface.ts — IStockDataSource 인터페이스 (getQuote, getHistory, getFundamentals)",
         "backend/src/data-sources/kr-stock.adapter.ts — 한국투자증권 REST API 어댑터",
-        "backend/src/data-sources/us-stock.adapter.ts — Polygon.io @polygon.io/client-js 어댑터 (5 req/min BullMQ 직렬화)",
+        "backend/src/data-sources/us-stock.adapter.ts — Polygon.io @polygon.io/client-js 어댑터 (5 req/min Redis 토큰버킷 직렬화 — BullMQ 동등 구현)",
         "backend/prisma/seed/ — kospi200.json, sp500.json, qqq.json 종목 리스트 JSON 파일",
         "backend/prisma/seed.ts — prisma.stock.upsert()로 시드 실행",
         "GET /stocks?market=KR|US — 목록 반환 (Redis 캐시 적용)",
