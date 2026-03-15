@@ -114,7 +114,8 @@ export class UsStockAdapter implements IStockDataSource {
       const prices = aggData.results || [];
       const week52High = prices.length ? Math.max(...prices.map((p) => p.h)).toString() : undefined;
       const week52Low = prices.length ? Math.min(...prices.map((p) => p.l)).toString() : undefined;
-      return { week52High, week52Low };
+      // PER/PBR/dividendYield not available on Polygon.io free tier
+      return { per: undefined, pbr: undefined, dividendYield: undefined, week52High, week52Low };
     } catch (err) {
       this.logger.error(`Polygon getFundamentals failed for ${symbol}`, err);
       return {};
