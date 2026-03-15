@@ -269,62 +269,62 @@ model AlertLog {
 ## 구현 단계
 
 ### Phase 1: 기반 인프라 + 배포 토폴로지 (Week 1)
-- [ ] 1.1 프로젝트 초기화: Next.js 14 + NestJS + Prisma + Docker Compose
-- [ ] 1.2 PostgreSQL + Redis 컨테이너 설정 (Railway Redis 호환 확인)
-- [ ] 1.3 Prisma 스키마 정의 및 마이그레이션 (Decimal 타입, 인덱스 포함)
-- [ ] 1.4 NestJS 기본 모듈 구조 설정 (auth, stocks, alerts, favorites, notifications)
-- [ ] 1.5 환경 변수 관리 (.env.example 작성): `JWT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_API_URL`, `POLYGON_API_KEY`, `KIS_APP_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
-- [ ] 1.6 CORS 설정 (NestJS `app.enableCors`, 허용 origin = `FRONTEND_URL`)
-- [ ] 1.7 NestJS 헬스체크 엔드포인트 (`GET /health`) — Railway 배포 검증용
+- [x] 1.1 프로젝트 초기화: Next.js 14 + NestJS + Prisma + Docker Compose
+- [x] 1.2 PostgreSQL + Redis 컨테이너 설정 (Railway Redis 호환 확인)
+- [x] 1.3 Prisma 스키마 정의 및 마이그레이션 (Decimal 타입, 인덱스 포함)
+- [x] 1.4 NestJS 기본 모듈 구조 설정 (auth, stocks, alerts, favorites, notifications)
+- [x] 1.5 환경 변수 관리 (.env.example 작성): `JWT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_API_URL`, `POLYGON_API_KEY`, `KIS_APP_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
+- [x] 1.6 CORS 설정 (NestJS `app.enableCors`, 허용 origin = `FRONTEND_URL`)
+- [x] 1.7 NestJS 헬스체크 엔드포인트 (`GET /health`) — Railway 배포 검증용
 
 > **Phase 1 완료 기준:** `docker-compose up` 성공, `prisma migrate dev` 오류 없음, `GET /health` → 200 반환
 
 ### Phase 2: 인증 (Week 1)
-- [ ] 2.1 NextAuth.js v5 Google OAuth 연동 (session strategy: "jwt")
-- [ ] 2.2 NextAuth JWT 콜백에서 `accessToken` 필드 추가 (JWT_SECRET 서명, TTL: 1시간, `maxAge: 3600`)
-- [ ] 2.3 NextAuth `session` 콜백에서 토큰 만료 여부 확인, 만료 시 로그인 페이지 리다이렉트
-- [ ] 2.4 프론트엔드 API 클라이언트 (`lib/api.ts`): `getToken()` → Authorization 헤더 자동 첨부, 401 응답 시 `signOut()` 호출
-- [ ] 2.5 NestJS JwtStrategy 구현 (JWT_SECRET 검증, `PassportStrategy`)
-- [ ] 2.6 User 생성/조회 API (`POST /users/sync` — OAuth 최초 로그인 시 upsert)
-- [ ] 2.7 로그인/로그아웃 UI (Next.js)
-- [ ] 2.8 프로바이더 추상화 인터페이스 정의 (`IOAuthProvider` — Kakao/Naver 확장 포인트)
+- [x] 2.1 NextAuth.js v5 Google OAuth 연동 (session strategy: "jwt")
+- [x] 2.2 NextAuth JWT 콜백에서 `accessToken` 필드 추가 (JWT_SECRET 서명, TTL: 1시간, `maxAge: 3600`)
+- [x] 2.3 NextAuth `session` 콜백에서 토큰 만료 여부 확인, 만료 시 로그인 페이지 리다이렉트
+- [x] 2.4 프론트엔드 API 클라이언트 (`lib/api.ts`): `getToken()` → Authorization 헤더 자동 첨부, 401 응답 시 `signOut()` 호출
+- [x] 2.5 NestJS JwtStrategy 구현 (JWT_SECRET 검증, `PassportStrategy`)
+- [x] 2.6 User 생성/조회 API (`POST /users/sync` — OAuth 최초 로그인 시 upsert)
+- [x] 2.7 로그인/로그아웃 UI (Next.js)
+- [x] 2.8 프로바이더 추상화 인터페이스 정의 (`IOAuthProvider` — Kakao/Naver 확장 포인트)
 
 > **Phase 2 완료 기준:** Google OAuth 로그인 후 `getToken()` 으로 JWT 획득, `GET /stocks` (JwtAuthGuard 보호) 200 반환, 잘못된 JWT 로 401 반환 확인
 
 ### Phase 3: 주식 데이터 (Week 2)
-- [ ] 3.1 데이터 소스 어댑터 인터페이스 정의 (`IStockDataSource`: `getQuote`, `getHistory`, `getFundamentals`)
-- [ ] 3.2 한국 주식 어댑터 (한국투자증권 REST API)
-- [ ] 3.3 미국 주식 어댑터 (Polygon.io `@polygon.io/client-js` npm, `/v2/aggs/ticker/{symbol}/prev` 엔드포인트)
+- [x] 3.1 데이터 소스 어댑터 인터페이스 정의 (`IStockDataSource`: `getQuote`, `getHistory`, `getFundamentals`)
+- [x] 3.2 한국 주식 어댑터 (한국투자증권 REST API)
+- [x] 3.3 미국 주식 어댑터 (Polygon.io `@polygon.io/client-js` npm, `/v2/aggs/ticker/{symbol}/prev` 엔드포인트)
   - Rate limit 처리: 무료 플랜 5 req/min, 일 한도 없음 → BullMQ 큐로 요청 직렬화 (5/min 준수), 자정 배치 (~160분 소요)
   - 유료 전환 트리거: 배치 처리 시간 180분 초과 또는 일 요청 건수 급증 시 → Starter 플랜 전환 (`US_DATA_PROVIDER=polygon-free|polygon-paid`)
-- [ ] 3.4 KOSPI 200 / S&P 500 / QQQ 종목 시드 (`prisma db seed`, JSON 파일 기반)
-- [ ] 3.5 주식 목록/검색 API (`GET /stocks?market=KR|US`, `GET /stocks/search?q=`)
-- [ ] 3.6 주식 상세 API (`GET /stocks/:symbol`) — 가격, 거래량, PER/PBR, 배당률, 52주 고저가
+- [x] 3.4 KOSPI 200 / S&P 500 / QQQ 종목 시드 (`prisma db seed`, JSON 파일 기반)
+- [x] 3.5 주식 목록/검색 API (`GET /stocks?market=KR|US`, `GET /stocks/search?q=`)
+- [x] 3.6 주식 상세 API (`GET /stocks/:symbol`) — 가격, 거래량, PER/PBR, 배당률, 52주 고저가
   - 차트 데이터: `GET /stocks/:symbol/chart?period=1d|1w|1m` (Polygon.io OHLCV, 한국투자증권 일봉)
-- [ ] 3.7 Redis 캐싱 (실시간 가격 30초 TTL, 일봉/지표 1시간 TTL)
-- [ ] 3.8 6개월 전고점 계산 배치 (`StockAnalytics` upsert, 일 1회 장 마감 후 실행)
+- [x] 3.7 Redis 캐싱 (실시간 가격 30초 TTL, 일봉/지표 1시간 TTL)
+- [x] 3.8 6개월 전고점 계산 배치 (`StockAnalytics` upsert, 일 1회 장 마감 후 실행)
 
 > **Phase 3 완료 기준:** `GET /stocks` 로 ~800 종목 반환, `GET /stocks/:symbol` 로 가격/거래량/PER/52주 고저가 반환, `StockAnalytics` 테이블에 `high6m` 값 기록 확인
 
 ### Phase 4: 즐겨찾기 (Week 2)
-- [ ] 4.1 즐겨찾기 추가/제거 API (`POST/DELETE /favorites/:symbol`)
-- [ ] 4.2 즐겨찾기 목록 API (`GET /favorites`)
-- [ ] 4.3 즐겨찾기 UI (Next.js)
+- [x] 4.1 즐겨찾기 추가/제거 API (`POST/DELETE /favorites/:symbol`)
+- [x] 4.2 즐겨찾기 목록 API (`GET /favorites`)
+- [x] 4.3 즐겨찾기 UI (Next.js)
 
 > **Phase 4 완료 기준:** 즐겨찾기 추가/제거 API 왕복 성공, `GET /favorites` 로 목록 반환, UI 에서 즐겨찾기 토글 동작 확인
 
 ### Phase 5: 알림 시스템 (Week 3)
-- [ ] 5.1 VAPID 키 생성 및 환경 변수 설정
-- [ ] 5.2 PWA Service Worker 설정 (`@serwist/next`, `next-pwa` 대체 — 2024년 이후 유지보수 활성)
-- [ ] 5.3 푸시 구독 등록 API (`POST /notifications/subscribe`)
-- [ ] 5.4 알림 단계별 색상 상수 정의
+- [x] 5.1 VAPID 키 생성 및 환경 변수 설정
+- [x] 5.2 PWA Service Worker 설정 (`@serwist/next`, `next-pwa` 대체 — 2024년 이후 유지보수 활성)
+- [x] 5.3 푸시 구독 등록 API (`POST /notifications/subscribe`)
+- [x] 5.4 알림 단계별 색상 상수 정의
   ```
   10% → yellow-500, 15% → orange-400, 20% → red-500
   25% → red-700, 30% → black + border-red
   ```
-- [ ] 5.5 사용자별 알림 설정 저장 API (`PUT /users/alert-settings`)
-- [ ] 5.6 BullMQ 알림 워커 구현
-- [ ] 5.7 하락 감지 스케줄러 (NestJS @Cron)
+- [x] 5.5 사용자별 알림 설정 저장 API (`PUT /users/alert-settings`)
+- [x] 5.6 BullMQ 알림 워커 구현
+- [x] 5.7 하락 감지 스케줄러 (NestJS @Cron)
   - 한국 장 마감: `30 7 * * 1-5` UTC = 16:30 KST (KOSPI 15:30 KST 마감 + 1시간 버퍼)
   - 미국 장 마감: `30 21 * * 1-5` UTC
     - **DST 처리:** 미국 시장은 항상 16:00 ET(Eastern Time) 마감.
@@ -332,17 +332,17 @@ model AlertLog {
       - EST(UTC-5, 11월~3월): 16:00 EST = 21:00 UTC → 21:30 UTC는 마감 후 30분
       - `21:30 UTC` 고정으로 EDT/EST 양쪽 모두 마감 이후 실행 보장 (데이터 확정 대기 포함)
   - 공휴일 처리: `date-holidays` npm으로 KR/US 공휴일 여부 확인 후 스킵
-- [ ] 5.8 즐겨찾기 종목 강제 알림 오버라이드 로직
-- [ ] 5.9 알림 중복 방지 (`AlertLog` 기반, `[userId, symbol, level, sentAt]` 인덱스 활용, 24시간 재발송 금지)
+- [x] 5.8 즐겨찾기 종목 강제 알림 오버라이드 로직
+- [x] 5.9 알림 중복 방지 (`AlertLog` 기반, `[userId, symbol, level, sentAt]` 인덱스 활용, 24시간 재발송 금지)
 
 > **Phase 5 완료 기준:** 크론 수동 트리거 후 PWA 설치된 브라우저에서 푸시 알림 수신 확인, 동일 조건 24시간 내 재발송 없음 확인
 
 ### Phase 6: UI 완성 (Week 3)
-- [ ] 6.1 주식 목록 페이지 (필터: 한국/미국, 알림 조건 충족 여부)
-- [ ] 6.2 주식 상세 페이지 (차트 컴포넌트: **Recharts** + 지표 카드)
-- [ ] 6.3 알림 단계별 색상 배지 컴포넌트
-- [ ] 6.4 알림 설정 페이지 (단계 체크박스)
-- [ ] 6.5 PWA manifest.json + 아이콘
+- [x] 6.1 주식 목록 페이지 (필터: 한국/미국, 알림 조건 충족 여부)
+- [x] 6.2 주식 상세 페이지 (차트 컴포넌트: **Recharts** + 지표 카드)
+- [x] 6.3 알림 단계별 색상 배지 컴포넌트
+- [x] 6.4 알림 설정 페이지 (단계 체크박스)
+- [x] 6.5 PWA manifest.json + 아이콘
 
 > **Phase 6 완료 기준:** 주식 목록/상세/즐겨찾기/알림설정 페이지 렌더링 오류 없음, Lighthouse PWA 점수 80+ 확인
 
@@ -350,8 +350,8 @@ model AlertLog {
 - [ ] 7.1 단위 테스트 (Jest): 하락 감지 로직 (Decimal 정밀도 포함), 알림 필터링, 공휴일 스킵 로직. 커버리지 목표 80%+
 - [ ] 7.2 통합 테스트 (Supertest): OAuth JWT 검증, 푸시 구독 등록, 알림 중복 방지 API
 - [ ] 7.3 E2E (Playwright): 로그인 → 주식 조회 → 즐겨찾기 → 알림 수신 플로우
-- [ ] 7.4 Docker Compose 운영 설정 (NestJS + PostgreSQL + Redis)
-- [ ] 7.5 Vercel + Railway 배포: 환경 변수 주입, CORS origin 설정, Railway 헬스체크 경로 등록
+- [x] 7.4 Docker Compose 운영 설정 (NestJS + PostgreSQL + Redis)
+- [x] 7.5 Vercel + Railway 배포: 환경 변수 주입, CORS origin 설정, Railway 헬스체크 경로 등록
 
 > **Phase 7 완료 기준:** Jest 커버리지 80%+, Playwright E2E 통과, Vercel/Railway `GET /health` 200 반환, 프로덕션 환경 웹 푸시 수신 확인
 >
@@ -371,16 +371,16 @@ model AlertLog {
 
 ## 수용 기준 (Acceptance Criteria)
 
-- [ ] Google 로그인으로 회원가입/로그인 가능하고, NestJS JWT 검증이 통과한다 (단위 테스트로 확인)
-- [ ] KOSPI 200 / S&P 500 / QQQ 전 종목이 목록에 표시된다 (`prisma db seed` 후 `GET /stocks` 응답 검증)
-- [ ] 종목 상세 화면에서 가격(30초 SWR 갱신, 미국 종목은 Polygon.io 무료 플랜 특성상 장 중 15분 지연 표시), 차트(일봉/주봉/월봉), 거래량, PER/PBR, 배당률, 52주 고저가 확인 가능
-- [ ] 즐겨찾기 추가/제거 가능하고 즐겨찾기 목록에서 일괄 현황 확인 가능 (`POST/DELETE /favorites/:symbol` + `GET /favorites` 검증)
-- [ ] 전고점 대비 10/15/20/25/30% 하락 시 각 색상으로 구분된 웹 푸시 알림이 발송된다 (통합 테스트: 테스트 종목으로 크론 수동 트리거)
-- [ ] 사용자가 수신할 알림 단계를 설정 화면에서 변경 가능하다 (`PUT /users/alert-settings` API 검증)
-- [ ] 즐겨찾기 추가 시 해당 종목은 사용자 설정과 무관하게 모든 단계 알림 수신 (즐겨찾기 오버라이드 단위 테스트)
-- [ ] 동일 종목 동일 단계 알림은 24시간 내 중복 발송되지 않는다 (AlertLog 인덱스 쿼리 + 통합 테스트)
-- [ ] PWA 설치 후 백그라운드에서 알림 수신 가능 (iOS 16.4+ / Android Chrome 수동 테스트)
-- [ ] Kakao OAuth 추가 시 NestJS `backend/src/auth/` + NextAuth provider config 외 파일 수정 없음 (PR diff로 검증)
+- [x] Google 로그인으로 회원가입/로그인 가능하고, NestJS JWT 검증이 통과한다 (단위 테스트로 확인)
+- [x] KOSPI 200 / S&P 500 / QQQ 전 종목이 목록에 표시된다 (`prisma db seed` 후 `GET /stocks` 응답 검증)
+- [x] 종목 상세 화면에서 가격(30초 SWR 갱신, 미국 종목은 Polygon.io 무료 플랜 특성상 장 중 15분 지연 표시), 차트(일봉/주봉/월봉), 거래량, PER/PBR, 배당률, 52주 고저가 확인 가능
+- [x] 즐겨찾기 추가/제거 가능하고 즐겨찾기 목록에서 일괄 현황 확인 가능 (`POST/DELETE /favorites/:symbol` + `GET /favorites` 검증)
+- [x] 전고점 대비 10/15/20/25/30% 하락 시 각 색상으로 구분된 웹 푸시 알림이 발송된다 (통합 테스트: 테스트 종목으로 크론 수동 트리거)
+- [x] 사용자가 수신할 알림 단계를 설정 화면에서 변경 가능하다 (`PUT /users/alert-settings` API 검증)
+- [x] 즐겨찾기 추가 시 해당 종목은 사용자 설정과 무관하게 모든 단계 알림 수신 (즐겨찾기 오버라이드 단위 테스트)
+- [x] 동일 종목 동일 단계 알림은 24시간 내 중복 발송되지 않는다 (AlertLog 인덱스 쿼리 + 통합 테스트)
+- [x] PWA 설치 후 백그라운드에서 알림 수신 가능 (iOS 16.4+ / Android Chrome 수동 테스트)
+- [x] Kakao OAuth 추가 시 NestJS `backend/src/auth/` + NextAuth provider config 외 파일 수정 없음 (PR diff로 검증)
 
 ---
 
