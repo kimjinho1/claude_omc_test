@@ -40,9 +40,9 @@ Thumbs.db
 .claude/settings.local.json
 
 # OMC runtime state (ephemeral, not team-shared)
-.omc/state/
-.omc/logs/
-.omc/sessions/
+*/.omc/state/
+*/.omc/logs/
+*/.omc/sessions/
 
 # Python
 __pycache__/
