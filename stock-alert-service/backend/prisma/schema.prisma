@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  name              String?
+  image             String?
+  provider          String              // "google" | "kakao" | "naver"
+  alertSettings     AlertSetting[]
+  favorites         Favorite[]
+  pushSubscriptions PushSubscription[]  // 다중 디바이스 지원 (1:N)
+  createdAt         DateTime            @default(now())
+}
+
+model Stock {
+  symbol          String           @id
+  name            String
+  market          String           // "KOSPI" | "NASDAQ" | "NYSE"
+  indexMembership String[]         // ["KOSPI200", "SP500", "QQQ"]
+  favorites       Favorite[]
+  priceHistory    StockPrice[]
+  analytics       StockAnalytics?
+}
+
+model StockPrice {
+  id         String   @id @default(cuid())
+  symbol     String
+  price      Decimal  @db.Decimal(15, 4)
+  volume     BigInt?
+  recordedAt DateTime
+  stock      Stock    @relation(fields: [symbol], references: [symbol])
+
+  @@index([symbol, recordedAt])
+}
+
+model StockAnalytics {
+  id              String   @id @default(cuid())
+  symbol          String   @unique
+  high6m          Decimal  @db.Decimal(15, 4)
+  high6mUpdatedAt DateTime
+  stock           Stock    @relation(fields: [symbol], references: [symbol])
+}
+
+model AlertSetting {
+  id         String @id @default(cuid())
+  userId     String @unique
+  thresholds Int[]  // [10, 15, 20, 25, 30]
+  user       User   @relation(fields: [userId], references: [id])
+}
+
+model Favorite {
+  id     String @id @default(cuid())
+  userId String
+  symbol String
+  user   User   @relation(fields: [userId], references: [id])
+  stock  Stock  @relation(fields: [symbol], references: [symbol])
+
+  @@unique([userId, symbol])
+}
+
+model PushSubscription {
+  id       String @id @default(cuid())
+  userId   String
+  endpoint String
+  p256dh   String
+  auth     String
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, endpoint])
+}
+
+model AlertLog {
+  id          String   @id @default(cuid())
+  userId      String
+  symbol      String
+  dropPercent Decimal  @db.Decimal(5, 2)
+  level       Int      // 10 | 15 | 20 | 25 | 30
+  sentAt      DateTime @default(now())
+
+  @@index([userId, symbol, level, sentAt])
+}

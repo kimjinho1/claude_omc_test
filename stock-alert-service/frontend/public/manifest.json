@@ -1,0 +1,14 @@
+{
+  "name": "주식 알림 서비스",
+  "short_name": "주식 알림",
+  "description": "전고점 대비 하락 종목 알림 서비스",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#1d4ed8",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

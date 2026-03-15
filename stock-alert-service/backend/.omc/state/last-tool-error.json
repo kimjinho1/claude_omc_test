@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"rm -rf dist && node_modules/.bin/tsc -p tsconfig.build.json 2>&1 | head -40 && echo \\\"TSC done\\\" && ls dist/main.js && echo \\\"dist OK\\\"\",\"timeout\":60000,\"description\":\"Full TS compile from...",
+  "error": "Exit code 1\nTSC done\nls: dist/main.js: No such file or directory",
+  "timestamp": "2026-03-15T18:44:08.018Z",
+  "retry_count": 3
+}

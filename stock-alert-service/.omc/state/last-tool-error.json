@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"sleep 15 && cat /private/tmp/claude-501/-Users-kimjinho-Dev-claude-omc-test/80351322-9638-45cd-b3f1-3c699aa31080/tasks/buevulvzz.output 2>/dev/null && ls /Users/kimjinho/Dev/claude_omc_tes...",
+  "error": "Exit code 1\n\nTo address all issues (including breaking changes), run:\n  npm audit fix --force\n\nRun `npm audit` for details.\n\n> backend@0.0.1 build\n> nest build",
+  "timestamp": "2026-03-15T18:42:55.883Z",
+  "retry_count": 1
+}

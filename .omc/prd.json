@@ -1,0 +1,122 @@
+{
+  "project": "주식 정보 조회 및 알림 웹 서비스",
+  "plan": ".omc/plans/stock-alert-service-plan.md",
+  "rootDir": "stock-alert-service",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "모노레포 스캐폴딩 및 인프라 설정",
+      "phase": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "stock-alert-service/frontend/ — Next.js 14 App Router 프로젝트 생성 (TypeScript, Tailwind CSS)",
+        "stock-alert-service/backend/ — NestJS 프로젝트 생성 (TypeScript)",
+        "stock-alert-service/docker-compose.yml — PostgreSQL + Redis 컨테이너 정의",
+        "stock-alert-service/backend/prisma/schema.prisma — 계획서 스키마 완전 구현 (Decimal, 인덱스, PushSubscription 다중 디바이스)",
+        "stock-alert-service/backend/.env.example — 모든 필수 환경 변수 문서화",
+        "stock-alert-service/backend/src/app.module.ts — CORS 설정 포함 (enableCors)",
+        "GET /health 엔드포인트 구현 (DB + Redis ping 결과 반환)"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "인증 시스템 (NextAuth JWT → NestJS JwtStrategy)",
+      "phase": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "frontend/auth.ts — NextAuth v5 Google OAuth, session strategy: jwt, maxAge: 3600",
+        "frontend/lib/api.ts — getToken()으로 Bearer 토큰 자동 첨부, 401 시 signOut()",
+        "backend/src/auth/ — JwtStrategy (JWT_SECRET 검증), JwtAuthGuard 구현",
+        "backend/src/auth/ — IOAuthProvider 인터페이스 정의 (Kakao/Naver 확장 포인트)",
+        "POST /users/sync — Google 로그인 후 User upsert API 구현",
+        "JwtAuthGuard로 보호된 엔드포인트에 유효한 Bearer 토큰으로 200, 무효 토큰으로 401 반환"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "주식 데이터 어댑터 및 시드 데이터",
+      "phase": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "backend/src/data-sources/interfaces/stock-data-source.interface.ts — IStockDataSource 인터페이스 (getQuote, getHistory, getFundamentals)",
+        "backend/src/data-sources/kr-stock.adapter.ts — 한국투자증권 REST API 어댑터",
+        "backend/src/data-sources/us-stock.adapter.ts — Polygon.io @polygon.io/client-js 어댑터 (5 req/min BullMQ 직렬화)",
+        "backend/prisma/seed/ — kospi200.json, sp500.json, qqq.json 종목 리스트 JSON 파일",
+        "backend/prisma/seed.ts — prisma.stock.upsert()로 시드 실행",
+        "GET /stocks?market=KR|US — 목록 반환 (Redis 캐시 적용)",
+        "GET /stocks/search?q= — 종목 검색 API",
+        "GET /stocks/:symbol — 가격, 거래량, PER/PBR, 배당률, 52주 고저가 반환",
+        "GET /stocks/:symbol/chart?period=1d|1w|1m — OHLCV 데이터 반환"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "즐겨찾기 CRUD",
+      "phase": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "POST /favorites/:symbol — 즐겨찾기 추가 (JwtAuthGuard 보호)",
+        "DELETE /favorites/:symbol — 즐겨찾기 제거",
+        "GET /favorites — 즐겨찾기 목록 반환",
+        "동일 userId+symbol 중복 추가 시 409 또는 upsert 처리"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "전고점 계산 배치 및 하락 감지 스케줄러",
+      "phase": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "backend/src/alerts/analytics.service.ts — StockAnalytics upsert (6개월 전고점 Decimal 계산)",
+        "backend/src/alerts/drop-detector.service.ts — 하락률 계산 (Decimal 정밀도 유지), 단계별 감지 (10/15/20/25/30%)",
+        "NestJS @Cron 한국 마감: '30 7 * * 1-5' UTC, 미국 마감: '30 21 * * 1-5' UTC",
+        "date-holidays npm으로 공휴일 스킵 로직 구현",
+        "AlertLog 중복 방지: 동일 userId+symbol+level 24시간 내 재발송 금지",
+        "즐겨찾기 종목 강제 알림 오버라이드 (사용자 thresholds 무시)"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "PWA 웹 푸시 알림",
+      "phase": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "frontend — @serwist/next Service Worker 설정 (next-pwa 대체)",
+        "frontend/public/manifest.json — PWA manifest 정의",
+        "POST /notifications/subscribe — PushSubscription 저장 (@@unique([userId, endpoint]) 준수)",
+        "backend/src/notifications/ — web-push npm VAPID 기반 푸시 발송 구현",
+        "PUT /users/alert-settings — 사용자 thresholds 배열 저장",
+        "BullMQ 알림 워커 — 알림 큐에서 소비 후 web-push 발송"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "프론트엔드 UI 완성",
+      "phase": 6,
+      "passes": true,
+      "acceptanceCriteria": [
+        "app/(auth)/login/ — Google 로그인 페이지",
+        "app/dashboard/ — 주식 목록 (한국/미국 필터, SWR 30초 갱신)",
+        "app/stocks/[symbol]/ — 주식 상세 (Recharts 차트, 지표 카드)",
+        "app/favorites/ — 즐겨찾기 목록",
+        "app/settings/alerts/ — 알림 단계 설정 (체크박스)",
+        "알림 단계별 색상 배지 컴포넌트 (yellow/orange/red/dark-red/black)",
+        "Next.js 빌드 오류 없음 (npm run build 성공)"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "테스트 및 Docker Compose 설정",
+      "phase": 7,
+      "passes": true,
+      "acceptanceCriteria": [
+        "backend/src/alerts/__tests__/ — 하락 감지 로직 단위 테스트 (Decimal 정밀도 포함)",
+        "backend/src/alerts/__tests__/ — AlertLog 중복 방지 단위 테스트",
+        "backend/src/auth/__tests__/ — JWT 검증 단위 테스트",
+        "Jest 테스트 suite 실행 성공 (npm run test)",
+        "docker-compose.yml — NestJS + PostgreSQL + Redis 프로덕션 설정",
+        "backend/.env.example 모든 환경 변수 문서화 완성"
+      ]
+    }
+  ]
+}
