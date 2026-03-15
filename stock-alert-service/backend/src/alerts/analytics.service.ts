@@ -51,7 +51,10 @@ export class AnalyticsService {
     });
 
     for (const stock of stocksWithHistory) {
-      if (!stock.priceHistory.length) continue;
+      if (!stock.priceHistory.length) {
+        this.logger.debug(`DEBUG skipping ${stock.symbol}: no price data`);
+        continue;
+      }
       const high6m = stock.priceHistory.reduce(
         (max, p) => (p.price.greaterThan(max) ? p.price : max),
         new Decimal(0),
@@ -61,6 +64,7 @@ export class AnalyticsService {
         update: { high6m, high6mUpdatedAt: new Date() },
         create: { symbol: stock.symbol, high6m, high6mUpdatedAt: new Date() },
       });
+      this.logger.debug(`DEBUG analytics updated for ${stock.symbol}: high6m=${high6m}`);
     }
     this.logger.log(`Analytics updated for ${market}: ${stocks.length} stocks`);
   }

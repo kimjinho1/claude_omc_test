@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '../redis/redis.decorator';
 import Redis from 'ioredis';
@@ -26,6 +26,8 @@ interface CacheEntry<T> {
 
 @Injectable()
 export class StocksService {
+  private readonly logger = new Logger(StocksService.name);
+
   constructor(
     private prisma: PrismaService,
     private krAdapter: KrStockAdapter,
@@ -50,25 +52,31 @@ export class StocksService {
       const ageMs = Date.now() - new Date(entry.fetchedAt).getTime();
       if (ageMs < freshnessTtlMs) {
         // Cache is fresh — return directly without calling API
+        this.logger.debug(`CACHE HIT [${key}] age=${ageMs}ms (fresh)`);
         return entry.data;
       }
       // Cache is stale — try to refresh; fall back to stale on failure
+      this.logger.debug(`CACHE STALE [${key}] age=${ageMs}ms → calling API`);
       try {
         const fresh = await fetcher();
         const newEntry: CacheEntry<T> = { data: fresh, fetchedAt: new Date().toISOString() };
         await this.redis.setex(key, STORE_TTL_SEC, JSON.stringify(newEntry));
+        this.logger.debug(`CACHE REFRESHED [${key}]`);
         return fresh;
       } catch {
         // API rate-limited or unavailable — serve stale data
+        this.logger.debug(`CACHE STALE FALLBACK [${key}] API failed, serving stale data`);
         return entry.data;
       }
     }
 
     // No cache at all — fetch from API (no fallback possible)
+    this.logger.debug(`CACHE MISS [${key}] → calling API`);
     const data = await fetcher();
     if (data !== null && data !== undefined) {
       const entry: CacheEntry<T> = { data, fetchedAt: new Date().toISOString() };
       await this.redis.setex(key, STORE_TTL_SEC, JSON.stringify(entry));
+      this.logger.debug(`CACHE STORED [${key}]`);
     }
     return data;
   }

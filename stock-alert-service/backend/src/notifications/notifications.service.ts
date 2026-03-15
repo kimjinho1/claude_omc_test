@@ -24,7 +24,7 @@ export class NotificationsService {
     userId: string,
     subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
   ) {
-    return this.prisma.pushSubscription.upsert({
+    const result = await this.prisma.pushSubscription.upsert({
       where: { userId_endpoint: { userId, endpoint: subscription.endpoint } },
       update: {
         p256dh: subscription.keys.p256dh,
@@ -37,12 +37,15 @@ export class NotificationsService {
         auth: subscription.keys.auth,
       },
     });
+    this.logger.debug(`push subscription saved for userId=${userId}`);
+    return result;
   }
 
   async unsubscribe(userId: string, endpoint: string) {
     await this.prisma.pushSubscription.deleteMany({
       where: { userId, endpoint },
     });
+    this.logger.debug(`push subscription deleted for userId=${userId}`);
   }
 
   async sendToUser(userId: string, payload: object) {
@@ -57,6 +60,9 @@ export class NotificationsService {
             keys: { p256dh: sub.p256dh, auth: sub.auth },
           },
           JSON.stringify(payload),
+        );
+        this.logger.debug(
+          `push sent to userId=${userId} device=${sub.endpoint}`,
         );
       } catch (err) {
         this.logger.error(
