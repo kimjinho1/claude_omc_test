@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -41,9 +41,15 @@ function StockList({ market, token, onMarketChange }: { market: 'KR' | 'US'; tok
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold">주식 목록</h1>
-        <nav className="flex gap-2">
+        <nav className="flex gap-2 items-center">
           <Link href="/favorites" className="rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:text-white">즐겨찾기</Link>
           <Link href="/settings/alerts" className="rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:text-white">알림 설정</Link>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="rounded-lg px-3 py-1.5 text-sm text-red-400 hover:text-red-300 transition-colors"
+          >
+            로그아웃
+          </button>
         </nav>
       </div>
       <div className="mb-4 flex gap-2">
