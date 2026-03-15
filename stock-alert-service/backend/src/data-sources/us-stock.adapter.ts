@@ -42,7 +42,8 @@ export class UsStockAdapter implements IStockDataSource {
       await new Promise((r) => setTimeout(r, waitMs));
     }
 
-    const res = await fetch(`${url}?apiKey=${this.apiKey}`);
+    const separator = url.includes('?') ? '&' : '?';
+    const res = await fetch(`${url}${separator}apiKey=${this.apiKey}`);
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Polygon API error ${res.status}: ${text}`);
