@@ -5,8 +5,24 @@ import Redis from 'ioredis';
 import { KrStockAdapter } from '../data-sources/kr-stock.adapter';
 import { UsStockAdapter } from '../data-sources/us-stock.adapter';
 
-const PRICE_TTL = 30; // 30 seconds
-const DETAIL_TTL = 3600; // 1 hour
+/** How old cached data can be before we attempt a refresh (ms) */
+const FRESHNESS_MS: Record<string, number> = {
+  quote: 60_000,           // 1 minute
+  detail: 60_000,          // 1 minute
+  'chart:1d': 5 * 60_000,  // 5 minutes (hourly bars arrive slowly)
+  'chart:1w': 60 * 60_000, // 1 hour
+  'chart:1m': 60 * 60_000, // 1 hour
+  'chart:3m': 6 * 60 * 60_000, // 6 hours
+  'chart:1y': 24 * 60 * 60_000, // 24 hours
+};
+
+/** Safety-net expiry so Redis doesn't grow unbounded (7 days) */
+const STORE_TTL_SEC = 7 * 24 * 3600;
+
+interface CacheEntry<T> {
+  data: T;
+  fetchedAt: string; // ISO timestamp
+}
 
 @Injectable()
 export class StocksService {
@@ -16,6 +32,46 @@ export class StocksService {
     private usAdapter: UsStockAdapter,
     @InjectRedis() private redis: Redis,
   ) {}
+
+  /**
+   * Stale-while-revalidate helper.
+   * - Returns cached value if age < freshnessTtlMs.
+   * - Tries API refresh when stale; on failure returns stale data (graceful degradation).
+   * - Returns null only when there is no cached value AND the fetch fails.
+   */
+  private async withStaleCache<T>(
+    key: string,
+    freshnessTtlMs: number,
+    fetcher: () => Promise<T>,
+  ): Promise<T | null> {
+    const raw = await this.redis.get(key);
+    if (raw) {
+      const entry = JSON.parse(raw) as CacheEntry<T>;
+      const ageMs = Date.now() - new Date(entry.fetchedAt).getTime();
+      if (ageMs < freshnessTtlMs) {
+        // Cache is fresh — return directly without calling API
+        return entry.data;
+      }
+      // Cache is stale — try to refresh; fall back to stale on failure
+      try {
+        const fresh = await fetcher();
+        const newEntry: CacheEntry<T> = { data: fresh, fetchedAt: new Date().toISOString() };
+        await this.redis.setex(key, STORE_TTL_SEC, JSON.stringify(newEntry));
+        return fresh;
+      } catch {
+        // API rate-limited or unavailable — serve stale data
+        return entry.data;
+      }
+    }
+
+    // No cache at all — fetch from API (no fallback possible)
+    const data = await fetcher();
+    if (data !== null && data !== undefined) {
+      const entry: CacheEntry<T> = { data, fetchedAt: new Date().toISOString() };
+      await this.redis.setex(key, STORE_TTL_SEC, JSON.stringify(entry));
+    }
+    return data;
+  }
 
   async findAll(market?: string) {
     let where = {};
@@ -45,26 +101,18 @@ export class StocksService {
   }
 
   async getQuote(symbol: string) {
-    const cacheKey = `quote:${symbol}`;
-    const cached = await this.redis.get(cacheKey);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    if (cached) return JSON.parse(cached);
-
     const stock = await this.prisma.stock.findUnique({ where: { symbol } });
     if (!stock) return null;
 
     const adapter = stock.market === 'KOSPI' ? this.krAdapter : this.usAdapter;
-    const quote = await adapter.getQuote(symbol);
-    await this.redis.setex(cacheKey, PRICE_TTL, JSON.stringify(quote));
-    return quote;
+    return this.withStaleCache(
+      `quote:${symbol}`,
+      FRESHNESS_MS.quote,
+      () => adapter.getQuote(symbol),
+    );
   }
 
   async getDetail(symbol: string) {
-    const cacheKey = `detail:${symbol}`;
-    const cached = await this.redis.get(cacheKey);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    if (cached) return JSON.parse(cached);
-
     const stock = await this.prisma.stock.findUnique({
       where: { symbol },
       include: { analytics: true },
@@ -72,20 +120,31 @@ export class StocksService {
     if (!stock) return null;
 
     const adapter = stock.market === 'KOSPI' ? this.krAdapter : this.usAdapter;
-    const [quote, fundamentals] = await Promise.all([
-      adapter.getQuote(symbol),
-      adapter.getFundamentals(symbol),
-    ]);
-
-    const result = { ...stock, ...quote, ...fundamentals };
-    await this.redis.setex(cacheKey, DETAIL_TTL, JSON.stringify(result));
-    return result;
+    return this.withStaleCache(
+      `detail:${symbol}`,
+      FRESHNESS_MS.detail,
+      async () => {
+        const [quote, fundamentals] = await Promise.all([
+          adapter.getQuote(symbol),
+          adapter.getFundamentals(symbol),
+        ]);
+        return { ...stock, ...quote, ...fundamentals };
+      },
+    );
   }
 
-  async getChart(symbol: string, period: '1d' | '1w' | '1m') {
+  async getChart(symbol: string, period: '1d' | '1w' | '1m' | '3m' | '1y') {
     const stock = await this.prisma.stock.findUnique({ where: { symbol } });
     if (!stock) return null;
+
     const adapter = stock.market === 'KOSPI' ? this.krAdapter : this.usAdapter;
-    return adapter.getHistory(symbol, period);
+    const freshnessKey = `chart:${period}`;
+    const freshnessTtlMs = FRESHNESS_MS[freshnessKey] ?? FRESHNESS_MS['chart:1m'];
+
+    return this.withStaleCache(
+      `chart:${symbol}:${period}`,
+      freshnessTtlMs,
+      () => adapter.getHistory(symbol, period),
+    );
   }
 }

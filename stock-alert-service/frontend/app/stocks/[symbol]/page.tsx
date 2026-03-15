@@ -1,11 +1,21 @@
 'use client';
 
-import { use, useState, useRef } from 'react';
-import useSWR, { mutate } from 'swr';
-import { useSession } from 'next-auth/react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import Link from 'next/link';
+import { use, useRef, useState } from 'react';
+
+type Period = '1d' | '1w' | '1m' | '3m' | '1y';
+const PERIODS: { value: Period; label: string }[] = [
+  { value: '1d', label: '시간별' },
+  { value: '1w', label: '1주' },
+  { value: '1m', label: '1달' },
+  { value: '3m', label: '3달' },
+  { value: '1y', label: '1년' },
+];
+
 import DropBadge from '@/components/DropBadge';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import useSWR, { mutate } from 'swr';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -33,6 +43,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? '';
   const [toggling, setToggling] = useState(false);
+  const [period, setPeriod] = useState<Period>('1m');
+
+  // Chart range zoom state
+  const [zoomOffset, setZoomOffset] = useState(0);
+  const [zoomCount, setZoomCount] = useState<number | null>(null);
+  const [pendingIdx, setPendingIdx] = useState<number | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Chart range zoom state
   const [zoomOffset, setZoomOffset] = useState(0);
@@ -47,7 +64,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
   );
 
   const { data: chart = [] } = useSWR<OHLCVBar[]>(
-    token ? `${API_URL}/stocks/${symbol}/chart?period=1m` : null,
+    token ? `${API_URL}/stocks/${symbol}/chart?period=${period}` : null,
     (url: string) => fetcher(url, token),
   );
 
@@ -111,6 +128,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
     setPendingIdx(null);
   }
 
+  function handlePeriodChange(p: Period) {
+    setPeriod(p);
+    setZoomOffset(0);
+    setZoomCount(null);
+    setPendingIdx(null);
+  }
+
   const pendingDate = pendingIdx !== null ? displayData[pendingIdx]?.date : undefined;
 
   if (!detail) return <div className="p-8 text-gray-400">불러오는 중...</div>;
@@ -154,17 +178,35 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
 
       {chart.length > 0 && (
         <div className="mb-6 rounded-xl bg-gray-900 p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs text-gray-400">
-              {pendingIdx !== null
-                ? `⬜ 종료점을 클릭하세요 (시작: ${pendingDate ?? ''})`
-                : '📍 차트 클릭 → 시작점, 재클릭 → 범위 확대'}
-            </span>
+          {/* Period selector */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex gap-1">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => handlePeriodChange(p.value)}
+                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                    period === p.value
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
             {isZoomed && (
               <button onClick={resetZoom} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
                 전체 범위 보기
               </button>
             )}
+          </div>
+          <div className="mb-2">
+            <span className="text-xs text-gray-500">
+              {pendingIdx !== null
+                ? `⬜ 종료점을 클릭하세요 (시작: ${pendingDate ?? ''})`
+                : '📍 차트 클릭 → 시작점, 재클릭 → 범위 확대'}
+            </span>
           </div>
           {/* div-level click handler — more reliable than Recharts onClick */}
           <div

@@ -136,13 +136,32 @@ export class KrStockAdapter implements IStockDataSource {
 
   async getHistory(
     symbol: string,
-    period: '1d' | '1w' | '1m',
+    period: '1d' | '1w' | '1m' | '3m' | '1y',
   ): Promise<OHLCVBar[]> {
-    const periodCode = period === '1d' ? 'D' : period === '1w' ? 'W' : 'M';
+    const now = Date.now();
+    const periodCodeMap: Record<string, string> = {
+      '1d': 'D',
+      '1w': 'D',
+      '1m': 'D',
+      '3m': 'D',
+      '1y': 'M',
+    };
+    const daysBackMap: Record<string, number> = {
+      '1d': 30,
+      '1w': 30,
+      '1m': 60,
+      '3m': 90,
+      '1y': 365,
+    };
+    const periodCode = periodCodeMap[period];
+    const endDate = new Date(now).toISOString().slice(0, 10).replace(/-/g, '');
+    const startDate = new Date(now - daysBackMap[period] * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, '');
     try {
-      const endDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const data = await this.kisGet<KisHistoryResponse>(
-        `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?fid_cond_mrkt_div_code=J&fid_input_iscd=${symbol}&fid_input_date_1=20240101&fid_input_date_2=${endDate}&fid_period_div_code=${periodCode}&fid_org_adj_prc=0`,
+        `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?fid_cond_mrkt_div_code=J&fid_input_iscd=${symbol}&fid_input_date_1=${startDate}&fid_input_date_2=${endDate}&fid_period_div_code=${periodCode}&fid_org_adj_prc=0`,
         { tr_id: 'FHKST03010100' },
       );
       return (data.output2 || []).map((bar: KisOhlcvBar) => ({
