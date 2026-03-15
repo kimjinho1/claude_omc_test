@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { useSession } from 'next-auth/react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import Link from 'next/link';
 import DropBadge from '@/components/DropBadge';
 
@@ -29,6 +29,11 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken ?? '';
   const [toggling, setToggling] = useState(false);
+
+  // Chart range zoom state
+  const [zoomOffset, setZoomOffset] = useState(0);
+  const [zoomCount, setZoomCount] = useState<number | null>(null);
+  const [pendingIdx, setPendingIdx] = useState<number | null>(null);
 
   const { data: detail } = useSWR<StockDetail>(
     token ? `${API_URL}/stocks/${symbol}` : null,
@@ -58,6 +63,43 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
       setToggling(false);
     }
   }
+
+  // Compute displayed chart data with zoom applied
+  const baseData = chart.slice(-60);
+  const displayData = zoomCount !== null
+    ? baseData.slice(zoomOffset, zoomOffset + zoomCount)
+    : baseData.slice(zoomOffset);
+
+  const isZoomed = zoomOffset > 0 || zoomCount !== null;
+
+  function handleChartClick(data: { activeTooltipIndex?: number | string | null } | null) {
+    if (!data) return;
+    const raw = data.activeTooltipIndex;
+    if (typeof raw !== 'number') return;
+    const idx = raw;
+
+    if (pendingIdx === null) {
+      // First click: mark start
+      setPendingIdx(idx);
+    } else {
+      // Second click: apply zoom
+      const start = Math.min(pendingIdx, idx);
+      const end = Math.max(pendingIdx, idx);
+      if (start < end) {
+        setZoomOffset((prev) => prev + start);
+        setZoomCount(end - start + 1);
+      }
+      setPendingIdx(null);
+    }
+  }
+
+  function resetZoom() {
+    setZoomOffset(0);
+    setZoomCount(null);
+    setPendingIdx(null);
+  }
+
+  const pendingDate = pendingIdx !== null ? displayData[pendingIdx]?.date : undefined;
 
   if (!detail) return <div className="p-8 text-gray-400">불러오는 중...</div>;
 
@@ -100,14 +142,31 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
 
       {chart.length > 0 && (
         <div className="mb-6 rounded-xl bg-gray-900 p-4">
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chart.slice(-60)}>
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval="preserveStartEnd" />
-              <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} width={60} />
-              <Tooltip contentStyle={{ background: '#111827', border: 'none', borderRadius: 8 }} />
-              <Line type="monotone" dataKey="close" stroke="#3b82f6" dot={false} strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs text-gray-400">
+              {pendingIdx !== null
+                ? '⬜ 종료점을 클릭하세요'
+                : '📍 차트 클릭으로 시작점 선택 (2번 클릭으로 범위 확대)'}
+            </span>
+            {isZoomed && (
+              <button onClick={resetZoom} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                전체 범위 보기
+              </button>
+            )}
+          </div>
+          <div style={{ cursor: 'crosshair' }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={displayData} onClick={handleChartClick}>
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} interval="preserveStartEnd" />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} width={60} />
+                <Tooltip contentStyle={{ background: '#111827', border: 'none', borderRadius: 8 }} />
+                <Line type="monotone" dataKey="close" stroke="#3b82f6" dot={false} strokeWidth={2} />
+                {pendingDate && (
+                  <ReferenceLine x={pendingDate} stroke="#f59e0b" strokeDasharray="4 2" strokeWidth={2} />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
