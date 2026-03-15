@@ -51,12 +51,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ symbol: 
   const [pendingIdx, setPendingIdx] = useState<number | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  // Chart range zoom state
-  const [zoomOffset, setZoomOffset] = useState(0);
-  const [zoomCount, setZoomCount] = useState<number | null>(null);
-  const [pendingIdx, setPendingIdx] = useState<number | null>(null);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-
   const { data: detail } = useSWR<StockDetail>(
     token ? `${API_URL}/stocks/${symbol}` : null,
     (url: string) => fetcher(url, token),
