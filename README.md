@@ -1,5 +1,7 @@
 # oh-my-claudecode (OMC) 찍먹
-정확한 정보는 아래 주소에서 확인  
+## 주식 저점 알림 웹을 클로드로 만들어보자(바이브)
+
+OMC 관련 정확한 정보는 아래 주소에서 확인  
 https://yeachan-heo.github.io/oh-my-claudecode-website/docs.html#notifications
 
 ## 목차
