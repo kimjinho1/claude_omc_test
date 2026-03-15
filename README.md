@@ -1,9 +1,4 @@
-# oh-my-claudecode (OMC) 사용 가이드
-
-Claude Code에 멀티 에이전트 오케스트레이션 레이어를 추가하는 플러그인입니다.
-
----
-
+# oh-my-claudecode (OMC) 찍먹
 ## 목차
 
 1. [설치](#1-설치)
