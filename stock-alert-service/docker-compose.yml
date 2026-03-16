@@ -58,6 +58,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       INTERNAL_API_URL: http://backend:3001
+      AUTH_TRUST_HOST: 'true'
     ports:
       - '3000:3000'
     depends_on:
